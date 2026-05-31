@@ -1,0 +1,9 @@
+{
+  "name": "presto",
+  "version": "0.1.0",
+  "description": "Three production-grade design skills (impeccable, design-taste-frontend, emil-design-eng) stacked into one composable workflow, plus a fourth (houdini) for the cold-start blank canvas. Run /magic to go end to end, /houdini to cold-start, or any of six standalone break-out commands.",
+  "author": { "name": "Brian Yu" },
+  "repository": "https://github.com/brianyu18/presto",
+  "license": "MIT",
+  "keywords": ["design", "frontend", "ui", "ux", "workflow", "multi-agent", "anti-slop", "production-grade", "design-engineering"]
+}

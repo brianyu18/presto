@@ -8,20 +8,21 @@ A Claude Code plugin that stacks three production-grade design skills (impeccabl
 
 1. [What presto is](#what-presto-is)
 2. [Why three skills, one workflow](#why-three-skills-one-workflow)
-3. [Quick start](#quick-start)
-4. [The /magic command](#the-magic-command)
-5. [The /houdini creative partner](#the-houdini-creative-partner)
-6. [Break-out commands](#break-out-commands)
-7. [The eight phases](#the-eight-phases)
-8. [Memory model](#memory-model)
-9. [Hand-off artifacts](#hand-off-artifacts)
-10. [Conflict resolution](#conflict-resolution)
-11. [Repository layout](#repository-layout)
-12. [The decks](#the-decks)
-13. [Architecture notes](#architecture-notes)
-14. [Plugin manifest](#plugin-manifest)
-15. [Extending](#extending)
-16. [Inspirations and credits](#inspirations-and-credits)
+3. [Install](#install)
+4. [Quick start](#quick-start)
+5. [The /magic command](#the-magic-command)
+6. [The /houdini creative partner](#the-houdini-creative-partner)
+7. [Break-out commands](#break-out-commands)
+8. [The eight phases](#the-eight-phases)
+9. [Memory model](#memory-model)
+10. [Hand-off artifacts](#hand-off-artifacts)
+11. [Conflict resolution](#conflict-resolution)
+12. [Repository layout](#repository-layout)
+13. [The decks](#the-decks)
+14. [Architecture notes](#architecture-notes)
+15. [Plugin manifest](#plugin-manifest)
+16. [Extending](#extending)
+17. [Inspirations and credits](#inspirations-and-credits)
 
 ---
 
@@ -51,6 +52,17 @@ Each skill is rigorous, but each leaves a real gap that the others fill:
 | **Weak at** | per-page grammar and per-component polish | project-wide register and tokens | anything above the component |
 
 When the three are composed, the gaps line up with the strengths of the others. The composition itself is presto.
+
+---
+
+## Install
+
+```
+/plugin marketplace add brianyu18/presto
+/plugin install presto@presto
+```
+
+The plugin self-marketplaces, so the same repo serves both roles. After installation, restart Claude Code (or run `/plugin reload`) and the seven slash commands plus four skills appear in the palette. presto is self-contained — the three source skills are bundled inside `skills/` along with houdini.
 
 ---
 
@@ -290,9 +302,11 @@ These resolutions are baked into the agent prompts at the phase boundaries. The 
 
 ```
 presto/
-├── plugin.json                  ← manifest: 4 skills, 7 commands, 2 workflows
+├── .claude-plugin/
+│   ├── plugin.json              ← plugin metadata (Claude Code reads this)
+│   └── marketplace.json         ← lets the repo serve as its own marketplace
 ├── README.md                    ← this file
-├── commands/                    ← 7 slash commands
+├── commands/                    ← 7 slash commands, auto-discovered
 │   ├── magic.md                 ← /magic [intent] [--surprise | --guided]
 │   ├── houdini.md               ← /houdini [args] — delegates to the houdini skill
 │   ├── design-read.md           ← phase 1 only
@@ -300,12 +314,14 @@ presto/
 │   ├── design-flow.md           ← phase 5 onward
 │   ├── design-audit.md          ← phase 7 only
 │   └── design-review.md         ← emil's review table on git diff
-├── workflows/
+├── workflows/                   ← workflow scripts invoked by commands (not auto-registered)
 │   ├── magic.js                 ← the 8-phase workflow
 │   └── houdini.js               ← the parallel-drafter workflow (1 or 3 drafts)
-├── skills/
-│   └── houdini/
-│       └── SKILL.md             ← creative partner conversational orchestrator
+├── skills/                      ← 4 skills, auto-discovered as <name>/SKILL.md
+│   ├── impeccable/              ← bundled; project-level design skill
+│   ├── design-taste-frontend/   ← bundled; page-level design skill
+│   ├── emil-design-eng/         ← bundled; component-level craft skill
+│   └── houdini/                 ← presto's own; creative partner orchestrator
 ├── memory/                      ← persistent state (see Memory model)
 │   └── .gitkeep
 ├── seeds/                       ← houdini design artifacts (see Hand-off artifacts)
@@ -322,7 +338,7 @@ presto/
     └── deck-combined.html
 ```
 
-The three source skills (impeccable, design-taste-frontend, emil-design-eng) are referenced by `plugin.json` from their original install locations under `claude-sync/skills/`. presto does not copy them; it composes them.
+All four skills are vendored inside `skills/` so the plugin is self-contained: no external skill paths to resolve, no install-time dependencies beyond Claude Code itself.
 
 ---
 
@@ -371,33 +387,36 @@ If a phase fails or is interrupted, the prior phases' outputs survive. Re-runnin
 
 ## Plugin manifest
 
-`plugin.json` declares four skills, seven commands, and two workflows:
+Two manifest files under `.claude-plugin/`:
+
+**`.claude-plugin/plugin.json`** — plugin metadata. Claude Code's plugin loader auto-discovers commands from `commands/*.md`, skills from `skills/<name>/SKILL.md`, hooks from `hooks/`, and agents from `agents/`. The manifest only carries metadata.
 
 ```json
 {
   "name": "presto",
   "version": "0.1.0",
-  "skills": [
-    { "name": "impeccable",             "path": "../claude-sync/skills/impeccable" },
-    { "name": "design-taste-frontend",  "path": "../claude-sync/skills/design-taste-frontend" },
-    { "name": "emil-design-eng",        "path": "../claude-sync/skills/emil-design-eng" },
-    { "name": "houdini",                "path": "skills/houdini/SKILL.md" }
-  ],
-  "commands": [
-    { "name": "magic" }, { "name": "houdini" },
-    { "name": "design-read" }, { "name": "set-dials" },
-    { "name": "design-flow" }, { "name": "design-audit" },
-    { "name": "design-review" }
-  ],
-  "workflows": [
-    { "name": "magic" },
-    { "name": "houdini" }
-  ],
-  "memory": "memory/"
+  "description": "Three production-grade design skills (impeccable, design-taste-frontend, emil-design-eng) stacked into one composable workflow, plus a fourth (houdini) for the cold-start blank canvas.",
+  "author": { "name": "Brian Yu" },
+  "repository": "https://github.com/brianyu18/presto",
+  "license": "MIT",
+  "keywords": ["design", "frontend", "ui", "ux", "workflow", "multi-agent", "anti-slop"]
 }
 ```
 
-The three source skills are referenced by relative path from their original install locations under `claude-sync/skills/`. If your layout differs, edit the `path` fields. The houdini skill ships inside the plugin.
+**`.claude-plugin/marketplace.json`** — lets the repo serve as its own marketplace, so it can be installed with `/plugin marketplace add brianyu18/presto`.
+
+```json
+{
+  "name": "presto",
+  "owner": { "name": "Brian Yu" },
+  "metadata": { "version": "0.1.0", "description": "..." },
+  "plugins": [
+    { "name": "presto", "version": "0.1.0", "description": "...", "source": "./" }
+  ]
+}
+```
+
+All four skills (impeccable, design-taste-frontend, emil-design-eng, houdini) are bundled inside `skills/` so the plugin is self-contained. The three source skills are credited in [Inspirations and credits](#inspirations-and-credits); they are vendored under their respective licenses (Apache 2.0 for impeccable, original-source licenses for the others).
 
 ---
 
