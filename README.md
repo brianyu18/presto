@@ -378,9 +378,9 @@ If a phase fails or is interrupted, the prior phases' outputs survive. Re-runnin
   "name": "presto",
   "version": "0.1.0",
   "skills": [
-    { "name": "impeccable",             "path": "../../claude-sync/skills/impeccable" },
-    { "name": "design-taste-frontend",  "path": "../../claude-sync/skills/design-taste-frontend" },
-    { "name": "emil-design-eng",        "path": "../../claude-sync/skills/emil-design-eng" },
+    { "name": "impeccable",             "path": "../claude-sync/skills/impeccable" },
+    { "name": "design-taste-frontend",  "path": "../claude-sync/skills/design-taste-frontend" },
+    { "name": "emil-design-eng",        "path": "../claude-sync/skills/emil-design-eng" },
     { "name": "houdini",                "path": "skills/houdini/SKILL.md" }
   ],
   "commands": [

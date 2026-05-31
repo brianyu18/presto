@@ -187,10 +187,10 @@ const ANGLE_OVERRIDE_MAP = {
   wildcard: 'wildcard overcommit',
 };
 
-const SEEDS_DIR = '/Users/brian/Desktop/claude-projects/design-team/presto/seeds';
-const STARTER_PATH = '/Users/brian/Desktop/claude-projects/design-team/presto/seeds/starter.html';
-const TOKENS_PATH = '/Users/brian/Desktop/claude-projects/design-team/presto/seeds/tokens.css';
-const DESIGN_APPROACH_PATH = '/Users/brian/Desktop/claude-projects/design-team/presto/memory/DESIGN_APPROACH.md';
+const SEEDS_DIR = '/Users/brian/Desktop/claude-projects/presto/seeds';
+const STARTER_PATH = '/Users/brian/Desktop/claude-projects/presto/seeds/starter.html';
+const TOKENS_PATH = '/Users/brian/Desktop/claude-projects/presto/seeds/tokens.css';
+const DESIGN_APPROACH_PATH = '/Users/brian/Desktop/claude-projects/presto/memory/DESIGN_APPROACH.md';
 
 const DRAFT_RULES = [
   'OKLCH for all color values. No hex. No rgb. No hsl. Put colors on :root as custom properties (--ink, --paper, --accent, etc.).',

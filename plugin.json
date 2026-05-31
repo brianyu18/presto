@@ -4,9 +4,9 @@
   "description": "Three design skills (impeccable + design-taste-frontend + emil-design-eng) stacked into one workflow. Run /magic for the full linear flow or break out into individual phases.",
   "author": { "name": "brian" },
   "skills": [
-    { "name": "impeccable",             "path": "../../claude-sync/skills/impeccable" },
-    { "name": "design-taste-frontend",  "path": "../../claude-sync/skills/design-taste-frontend" },
-    { "name": "emil-design-eng",        "path": "../../claude-sync/skills/emil-design-eng" },
+    { "name": "impeccable",             "path": "../claude-sync/skills/impeccable" },
+    { "name": "design-taste-frontend",  "path": "../claude-sync/skills/design-taste-frontend" },
+    { "name": "emil-design-eng",        "path": "../claude-sync/skills/emil-design-eng" },
     { "name": "houdini",                "path": "skills/houdini/SKILL.md" }
   ],
   "commands": [

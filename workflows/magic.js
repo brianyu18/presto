@@ -189,7 +189,7 @@ export default async function magic({ args, agent, phase, pipeline, parallel, wo
     const blankPageRegex = /new|fresh|blank|redesign|rebrand|from scratch|cold start/i;
     if (blankPageRegex.test(String(intent))) {
       const check = await agent(
-        `Check whether the file /Users/brian/Desktop/claude-projects/design-team/presto/memory/DESIGN_APPROACH.md exists.\n` +
+        `Check whether the file /Users/brian/Desktop/claude-projects/presto/memory/DESIGN_APPROACH.md exists.\n` +
         `Use the Bash tool (e.g. \`test -f <path> && echo yes || echo no\`) or the Read tool to verify.\n` +
         `Return { "exists": true } if the file is present, otherwise { "exists": false }. Do not create the file.`,
         {
