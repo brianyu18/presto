@@ -17,3 +17,6 @@ seeds/tokens.css
 
 # Local test runs / sample outputs (not shipped)
 magic-sample/
+
+# graphify (deprecated, stripped due to cost — see /fullsave step 5 removal)
+graphify-out/
