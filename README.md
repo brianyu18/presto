@@ -124,6 +124,8 @@ Runs Pre-Flight matrix, slop test, and emil review against the target. No new co
 
 If both `--surprise` and `--guided` are passed, `--surprise` wins (it is the more decisive bypass) and the override is logged.
 
+`--nogen` is also accepted on `/magic` and propagates through to houdini whenever houdini is invoked. In `--surprise` mode the flag is passed directly into the houdini workflow as `skip_image_gen: true`. In default/`--guided` mode, if the user opts in at the cold-start gate, the flag is forwarded to the `/houdini` invocation. The MoodBoard phase is skipped; downstream `/magic` phases proceed unchanged.
+
 ### What happens in each mode
 
 **`--surprise` (bypass).** The command parses `--surprise`, strips it from the intent, and directly invokes the houdini workflow with `{ autonomous: true, n_drafts: 1, angle_override: 'wildcard' }`. The houdini workflow generates a single wildcard draft and writes the three hand-off artifacts (`memory/DESIGN_APPROACH.md`, `seeds/starter.html`, `seeds/tokens.css`). The command then launches the magic workflow. Phase 0 finds the seed and skips, proceeding through phases 1 through 7 without interruption.
@@ -149,6 +151,8 @@ Quoting impeccable.style: *"craft codes toward a concrete image, not an abstract
 | GUIDED | `/houdini [brief]` or empty | Full conversational 5-phase flow. Default. |
 
 The skill detects mode from arg shape: `--auto` first, then the comma-list shape, else defaults to guided. When invoked without an explicit mode (just a sentence or empty), TUNE IN asks via `AskUserQuestion` at the start. Power-user shortcuts via args bypass the question.
+
+**`--nogen` modifier.** Orthogonal to the three modes — composes with any of them (e.g. `/houdini --nogen`, `/houdini "fintech, dark" --nogen`, `/houdini --auto wildcard --nogen`). When present, the MoodBoard phase is skipped entirely; no images are generated and drafters proceed with brief + design_read alone. Use when you've hit Gemini's image-gen quota, want faster iteration (skip ~15s of mood-board generation), are exploring text-only direction, or are running cost-sensitive batches.
 
 ### Five phases
 
@@ -445,6 +449,8 @@ Generated images are cached by `sha256(prompt + model + aspect)` at `NANOGEN_CAC
 ### Standalone use
 
 presto ships `/imagen` and `/imagen-edit` commands as thin shortcuts around the nanogen MCP tools, so you can generate or remix imagery directly from the slash palette without writing tool-call boilerplate.
+
+Quota or speed concerns? Use `--nogen` on `/houdini` or `/magic` to skip the MoodBoard phase entirely. Drafters proceed with text-only direction.
 
 ---
 

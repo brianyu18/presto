@@ -250,6 +250,7 @@ export default async function houdiniDrafts({ args, agent, phase, parallel, log 
   const constraints = args?.constraints ?? '';
   const visualBrief = typeof args?.visual_brief === 'string' ? args.visual_brief : '';
   const autonomous = args?.autonomous === true;
+  const skipImageGen = args?.skip_image_gen === true;
   const keywords = Array.isArray(args?.keywords) ? args.keywords.filter((k) => typeof k === 'string' && k.trim().length > 0) : [];
   const hasKeywords = keywords.length > 0;
   const hasVisualBrief = visualBrief.trim().length > 0;
@@ -364,7 +365,13 @@ export default async function houdiniDrafts({ args, agent, phase, parallel, log 
     `\n` +
     `Return ONLY the JSON object matching the schema.`;
 
-  const moodBoard = await agent(moodPrompt, { schema: MOOD_BOARD_SCHEMA, label: 'mood-board', phase: 'MoodBoard' });
+  let moodBoard;
+  if (skipImageGen) {
+    moodBoard = { mood_board: [], visual_direction_summary: '' };
+    log('MoodBoard skipped via skip_image_gen flag. Drafters will rely on brief + design_read + directive alone.');
+  } else {
+    moodBoard = await agent(moodPrompt, { schema: MOOD_BOARD_SCHEMA, label: 'mood-board', phase: 'MoodBoard' });
+  }
 
   const moodImages = Array.isArray(moodBoard?.mood_board) ? moodBoard.mood_board : [];
   const visualDirectionSummary = typeof moodBoard?.visual_direction_summary === 'string' ? moodBoard.visual_direction_summary : '';
@@ -376,6 +383,9 @@ export default async function houdiniDrafts({ args, agent, phase, parallel, log 
   const draftRulesBlock = DRAFT_RULES.map((r, i) => `  ${i + 1}. ${r}`).join('\n');
 
   const moodBoardForDrafterBlock = (() => {
+    if (skipImageGen && moodImages.length === 0 && !visualDirectionSummary) {
+      return `VISUAL DIRECTION: (no mood board this run — image generation was skipped via --nogen. Anchor your draft entirely in the brief, design_read, and your assigned creative directive below.)\n`;
+    }
     const header = `VISUAL DIRECTION (anchor your draft in this mood — do NOT embed these images in HTML; they are pure inspiration):\n`;
     const summaryLine = visualDirectionSummary
       ? `  Visual direction summary (DOMINANT signal): ${JSON.stringify(visualDirectionSummary)}\n`

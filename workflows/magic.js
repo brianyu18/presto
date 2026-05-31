@@ -169,6 +169,7 @@ export default async function magic({ args, agent, phase, pipeline, parallel, wo
   const skipTo = args?.skipTo ?? null;
   const mode = args?.mode ?? 'full';
   const startHook = args?.startHook ?? 'auto';
+  const skipImageGen = args?.skip_image_gen === true;
   const shouldRun = (name) => !skipTo || skipTo === name || phaseIndex(name) >= phaseIndex(skipTo);
 
   let houdini = null, read, context, dials, stack, build, polish, audit;
@@ -183,7 +184,7 @@ export default async function magic({ args, agent, phase, pipeline, parallel, wo
   } else if (startHook === 'houdini') {
     const reason = 'startHook=houdini forced; /houdini is a conversational skill and cannot run inside this workflow.';
     log(`Cold start detected. Recommend running /houdini before /magic. Pausing this run; restart /magic after /houdini completes. (${reason})`);
-    return { halted_for_houdini: true, reason };
+    return { halted_for_houdini: true, reason, skip_image_gen: skipImageGen };
   } else {
     // startHook === 'auto' (default)
     const blankPageRegex = /new|fresh|blank|redesign|rebrand|from scratch|cold start/i;
@@ -206,7 +207,7 @@ export default async function magic({ args, agent, phase, pipeline, parallel, wo
       if (check && check.exists === false) {
         const reason = 'net-new/redesign intent detected and DESIGN_APPROACH.md missing; /houdini is a conversational skill and cannot run inside this workflow.';
         log(`Cold start detected. Recommend running /houdini before /magic. Pausing this run; restart /magic after /houdini completes. (${reason})`);
-        return { halted_for_houdini: true, reason };
+        return { halted_for_houdini: true, reason, skip_image_gen: skipImageGen };
       } else {
         log('Houdini skipped: DESIGN_APPROACH.md already exists.');
       }
@@ -347,10 +348,10 @@ export default async function magic({ args, agent, phase, pipeline, parallel, wo
 
     log(`Audit gate: ${gate ? 'PASS' : 'FAIL'}`);
 
-    return { houdini, read, context, dials, stack, build, polish, audit, gate };
+    return { houdini, read, context, dials, stack, build, polish, audit, gate, skip_image_gen: skipImageGen };
   }
 
-  return { houdini, read, context, dials, stack, build, polish, audit, gate: null };
+  return { houdini, read, context, dials, stack, build, polish, audit, gate: null, skip_image_gen: skipImageGen };
 }
 
 // ---------- helpers ----------

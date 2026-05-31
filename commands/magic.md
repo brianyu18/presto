@@ -1,7 +1,7 @@
 ---
 name: magic
-description: Run the full 8-phase presto design flow (HOUDINI -> READ -> CONTEXT -> DIALS -> STACK -> BUILD -> POLISH -> AUDIT). Three modes: default conversational (one cold-start prompt), --surprise (zero prompts, autonomous wildcard seed), --guided (pause for approval at every phase boundary).
-argument-hint: "[intent] [--surprise | --guided]"
+description: Run the full 8-phase presto design flow (HOUDINI -> READ -> CONTEXT -> DIALS -> STACK -> BUILD -> POLISH -> AUDIT). Three modes: default conversational (one cold-start prompt), --surprise (zero prompts, autonomous wildcard seed), --guided (pause for approval at every phase boundary). Add --nogen to skip MoodBoard image generation in any /houdini invocation triggered by this command.
+argument-hint: "[intent] [--surprise | --guided] [--nogen]"
 ---
 
 # /magic
@@ -10,9 +10,9 @@ Kick off the full presto workflow. Three skills (impeccable, design-taste-fronte
 
 ## Behavior
 
-1. Parse `$ARGUMENTS` for flags. Recognize `--surprise` and `--guided`. Either flag may appear anywhere in the string. Strip whichever flags are present and trim surrounding whitespace. The remaining text is the intent.
+1. Parse `$ARGUMENTS` for flags. Recognize `--surprise`, `--guided`, and `--nogen`. Any flag may appear anywhere in the string. Strip whichever flags are present and trim surrounding whitespace. The remaining text is the intent. `--nogen` is orthogonal to `--surprise`/`--guided` and composes with either (or with the default conversational path); when present, it propagates to every `/houdini` invocation this command triggers so the MoodBoard image-generation phase is skipped.
 
-2. If BOTH `--surprise` and `--guided` were set, log a one-line override note ("both --surprise and --guided passed; --surprise wins, ignoring --guided") and treat the invocation as `--surprise`. `--surprise` wins because it is the more decisive bypass.
+2. If BOTH `--surprise` and `--guided` were set, log a one-line override note ("both --surprise and --guided passed; --surprise wins, ignoring --guided") and treat the invocation as `--surprise`. `--surprise` wins because it is the more decisive bypass. `--nogen` is orthogonal — it does not participate in this precedence and is honored regardless of which mode wins.
 
 3. **If `--surprise` (bypass path):**
 
@@ -22,6 +22,7 @@ Kick off the full presto workflow. Three skills (impeccable, design-taste-fronte
       - Tool: Workflow
       - scriptPath: `workflows/houdini.js`
       - args: `{ "brief": "<cleaned intent>", "autonomous": true, "n_drafts": 1, "angle_override": "wildcard" }`
+      - If `--nogen` was passed, add `"skip_image_gen": true` to the args object so houdini skips the MoodBoard phase entirely.
 
    c. When that workflow returns, it has already written `presto/memory/DESIGN_APPROACH.md`, `presto/seeds/starter.html`, and `presto/seeds/tokens.css`. Announce to the user in one line that the seed has landed, including the path to `starter.html`.
 
@@ -36,7 +37,7 @@ Kick off the full presto workflow. Three skills (impeccable, design-taste-fronte
 
    a. If the cleaned intent is empty, ask the user via AskUserQuestion for one short sentence describing what to build. Stop until they answer.
 
-   b. Briefly tell the user this run will pause between every phase, costs n round-trips to the workflow tool, and is the slow-but-visible mode.
+   b. Briefly tell the user this run will pause between every phase, costs n round-trips to the workflow tool, and is the slow-but-visible mode. If `--nogen` was passed, note that any `/houdini` cold-start invocation triggered during this run will skip MoodBoard image generation.
 
    c. For each phase in order — `Read`, `Context`, `Dials`, `Stack`, `Build`, `Polish`:
       - Launch the magic workflow:
@@ -76,11 +77,11 @@ Kick off the full presto workflow. Three skills (impeccable, design-taste-fronte
         - "No, proceed without it" — skip Phase 0 and READ a blank slate.
         - "Customize args" — pass specific arguments to /houdini.
 
-   d. **On "Yes":** Invoke `/houdini` with no arguments. The main loop loads `skills/houdini/SKILL.md`. Houdini's TUNE IN step will ask the user via AskUserQuestion which mode to run (Autonomous / Keywords / Guided). Let that conversation play out. When houdini completes its HAND-OFF (writes `DESIGN_APPROACH.md`), re-launch the magic workflow with the same `{ intent, mode: "full" }`. Phase 0 now finds the approach file and skips. Continue through AUDIT.
+   d. **On "Yes":** Invoke `/houdini` (passing `--nogen` along if it was set on this `/magic` invocation, so the MoodBoard phase is skipped). The main loop loads `skills/houdini/SKILL.md`. Houdini's TUNE IN step will ask the user via AskUserQuestion which mode to run (Autonomous / Keywords / Guided). Let that conversation play out. When houdini completes its HAND-OFF (writes `DESIGN_APPROACH.md`), re-launch the magic workflow with the same `{ intent, mode: "full" }`. Phase 0 now finds the approach file and skips. Continue through AUDIT.
 
    e. **On "No":** Re-launch the magic workflow with `{ intent, mode: "full", startHook: "off" }`. Phase 0 is bypassed. READ proceeds without a seed. Quality may suffer; this is the user's choice.
 
-   f. **On "Customize args":** Ask the user via AskUserQuestion for the houdini args they want (e.g. `--auto wildcard`, or a keyword list like `fintech, dark, terminal`). Invoke `/houdini` with the provided argument string. When houdini completes its hand-off, re-launch the magic workflow with `{ intent, mode: "full" }` as in case (d).
+   f. **On "Customize args":** Ask the user via AskUserQuestion for the houdini args they want (e.g. `--auto wildcard`, or a keyword list like `fintech, dark, terminal`). Invoke `/houdini` with the provided argument string (append `--nogen` to that string if it was set on this `/magic` invocation and the user did not already include it). When houdini completes its hand-off, re-launch the magic workflow with `{ intent, mode: "full" }` as in case (d).
 
 6. The workflow runs all phases linearly (in default and --surprise modes), persists phase outputs to `presto/memory/`, and surfaces the final AUDIT gate (`pass` or `fail`).
 

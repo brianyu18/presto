@@ -4,13 +4,13 @@
     "name": "Brian Yu"
   },
   "metadata": {
-    "version": "0.1.2",
+    "version": "0.1.3",
     "description": "Three production-grade design skills (impeccable, design-taste-frontend, emil-design-eng) stacked into one composable Claude Code plugin, plus a fourth (houdini) for the cold-start blank canvas. Includes the nanogen MCP server for Gemini image generation."
   },
   "plugins": [
     {
       "name": "presto",
-      "version": "0.1.2",
+      "version": "0.1.3",
       "description": "Design plugin. /magic runs the full 8-phase flow with three modes (--surprise, default, --guided). /houdini fills the blank canvas with a real starter template. Eight standalone break-out commands (including /imagen + /imagen-edit), plus the nanogen MCP server bundled at mcp-servers/nanogen/.",
       "source": "./"
     }

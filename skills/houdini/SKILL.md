@@ -34,6 +34,23 @@ Houdini supports three invocation modes. Detect the mode from the args BEFORE ru
 
 When args don't specify a mode (case 3), the skill asks the user which mode to use at the start of TUNE IN (see Phase 1, Step 0). The arg-based shortcuts (cases 1 and 2) skip that question entirely — they are the power-user bypass.
 
+**Orthogonal modifier: `--nogen`.** The `--nogen` flag is NOT a mode — it is a modifier that composes with any of the three modes above. When present, the MoodBoard phase is skipped entirely: the MoodBoard agent does not run, no images are generated, and drafters receive an empty visual direction section (falling back to brief + design_read alone, which is the pre-MoodBoard behavior). Strip `--nogen` from args during detection so it does not interfere with mode classification; pass `skip_image_gen: true` to the workflow when present.
+
+Example composed invocations:
+
+```
+/houdini --nogen                            — guided default, no image gen
+/houdini "fintech, dark" --nogen            — keywords mode, no image gen
+/houdini --auto wildcard --nogen            — autonomous, no image gen
+```
+
+**When to use `--nogen`:**
+
+- You've hit Gemini's image-gen quota and want to keep designing.
+- You want faster iteration (skip ~15s of mood-board generation).
+- Imagery isn't yet relevant for this exploration.
+- Cost-sensitive batch runs.
+
 **When to use each mode:**
 
 - **AUTONOMOUS** — for solo runs where the user wants houdini to just go: no questions, no presentation, no refine loop. Best when the user trusts the wildcard instinct and would rather react to a single shipped seed than pick from options. The mode collapses all five phases into TUNE IN (inference only) -> DRAFT (one draft) -> HAND-OFF.
@@ -234,6 +251,14 @@ Each drafter agent already has these baked in, but verify on hand-off:
 | AUTONOMOUS | args start with `--` or contain `--auto` token             | Inference only, no questions, extract chosen_angle   | 1           | skipped  | skipped  | runs; mode=`autonomous` + angle noted |
 | KEYWORDS   | comma-separated short tokens (2-6, each < 30 chars)        | Parse + classify; one disambiguation question only if keywords conflict | 3 (keywords threaded into each drafter) | runs     | runs     | runs; mode=`keywords` + keywords listed |
 | GUIDED     | empty args OR sentence-shaped brief (default)              | Full conversational hypothesis; up to 2 surgical questions | 3       | runs     | runs     | runs; mode=`guided`                   |
+
+### Modifier: `--nogen` (skip_image_gen=true)
+
+| Mode + `--nogen` | What changes vs the base mode                                                                                       |
+|------------------|---------------------------------------------------------------------------------------------------------------------|
+| AUTONOMOUS       | Same flow, MoodBoard phase skipped. Single drafter gets empty `visual_direction_summary` and `mood_board: []`.       |
+| KEYWORDS         | Same flow, MoodBoard phase skipped. All three drafters get empty visual direction; keywords + design_read carry it.  |
+| GUIDED           | Same flow, MoodBoard phase skipped. All three drafters get empty visual direction; brief + design_read carry it.     |
 
 ## Anti-patterns
 
