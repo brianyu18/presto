@@ -420,6 +420,34 @@ All four skills (impeccable, design-taste-frontend, emil-design-eng, houdini) ar
 
 ---
 
+## Image generation (nanogen)
+
+presto bundles the **nanogen** MCP server for Gemini image generation, vendored at `mcp-servers/nanogen/`. nanogen is a pure-stdlib Python MCP server wrapping Google's Gemini image API (`gemini-2.5-flash-image` by default, with `gemini-3-pro-image-preview` and the flash-3.1 family available). It is also published standalone at [https://github.com/brianyu18/nanogen](https://github.com/brianyu18/nanogen). Bundling it inside presto means design phases can generate, edit, and describe reference imagery without leaving the plugin.
+
+### Setup
+
+1. Set `GEMINI_API_KEY` in your shell environment. Get one at [https://aistudio.google.com/apikey](https://aistudio.google.com/apikey).
+2. Restart Claude Code. The nanogen MCP server starts automatically with presto via `.mcp.json`.
+
+A fallback key file at `~/.config/nanogen/key` is read if the env var is absent. Override with `NANOGEN_KEY_FILE`.
+
+### Tools exposed
+
+| Tool | Description |
+|---|---|
+| `generate` | Generate an image from a text prompt. Args: `prompt`, optional `aspect_ratio`, `output_path`, `model`. |
+| `edit` | Edit an existing image using a text prompt. Args: `input_path`, `prompt`, optional `output_path`, `model`. |
+| `describe` | Describe an image as structured JSON (description, OKLCH palette, style tags). Args: `input_path`. |
+| `batch` | Run many `generate` requests through the rate-limited queue. Args: `requests[]`. |
+
+Generated images are cached by `sha256(prompt + model + aspect)` at `NANOGEN_CACHE_DIR` (default `~/.cache/nanogen/`). Concurrent calls are serialized through an internal queue (default max 2) so the Gemini quota stays happy.
+
+### Standalone use
+
+presto ships `/imagen` and `/imagen-edit` commands as thin shortcuts around the nanogen MCP tools, so you can generate or remix imagery directly from the slash palette without writing tool-call boilerplate.
+
+---
+
 ## Extending
 
 ### Adding a new break-out command
