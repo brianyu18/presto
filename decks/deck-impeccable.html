@@ -1,0 +1,838 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Deck 01 — Impeccable</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,700&family=Inter+Tight:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* ============================================================
+     Built per impeccable's own rules.
+     Register: brand (this IS the product).
+     Strategy: committed — one saturated color carries ~40% of surface.
+     Palette: OKLCH; tinted neutrals biased toward the brand hue.
+     Type: contrast-axis pair — Fraunces (serif display) + Inter Tight (body).
+     Motion: intentional + reduced-motion aware. No bounce.
+     Bans honored: no gradient text, no side-stripe accents, no glass
+     by default, no per-section eyebrow, no numbered scaffolding,
+     no hero-metric template, no identical card grids.
+     ============================================================ */
+  :root {
+    /* Committed brand color: deep terracotta-clay */
+    --brand:    oklch(0.55 0.16 35);
+    --brand-2:  oklch(0.46 0.16 32);
+    --brand-3:  oklch(0.72 0.12 50);
+
+    /* Tinted neutrals (chroma 0.01 toward brand hue 35) */
+    --bg:       oklch(0.97 0.008 60);
+    --surface:  oklch(0.94 0.012 55);
+    --ink:      oklch(0.18 0.02 40);
+    --ink-2:    oklch(0.32 0.02 40);
+    --muted:    oklch(0.46 0.015 45);
+    --line:     oklch(0.86 0.015 50);
+
+    --display: "Fraunces", ui-serif, Georgia, serif;
+    --body:    "Inter Tight", ui-sans-serif, system-ui, sans-serif;
+    --mono:    ui-monospace, SFMono-Regular, Menlo, monospace;
+
+    --r-sm: 8px;
+    --r-md: 14px;
+    --r-lg: 22px;
+
+    /* Semantic z-index */
+    --z-sticky: 10;
+    --z-nav: 20;
+  }
+  *,*::before,*::after { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 16px/1.55 var(--body);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  /* Vertical snap deck */
+  main {
+    scroll-snap-type: y mandatory;
+    overflow-y: auto;
+    height: 100vh;
+  }
+  section.slide {
+    scroll-snap-align: start;
+    min-height: 100dvh;
+    padding: clamp(48px, 7vw, 96px) clamp(24px, 6vw, 96px);
+    display: grid;
+    align-content: center;
+    gap: 32px;
+    position: relative;
+    border-bottom: 1px solid var(--line);
+  }
+  /* No side-stripe accents per impeccable ban */
+
+  h1, h2, h3 {
+    font-family: var(--display);
+    font-weight: 500;
+    color: var(--ink);
+    text-wrap: balance;
+    letter-spacing: -0.02em;
+  }
+  h1 {
+    font-size: clamp(2.6rem, 6.4vw, 5.6rem); /* ≤6rem ceiling */
+    line-height: 0.98;
+    letter-spacing: -0.035em;
+  }
+  h1 em { font-style: italic; color: var(--brand); font-weight: 400; }
+  h2 {
+    font-size: clamp(2rem, 4vw, 3.4rem);
+    line-height: 1.02;
+  }
+  h3 {
+    font-family: var(--body);
+    font-weight: 600;
+    font-size: 1.1rem;
+    letter-spacing: -0.005em;
+    color: var(--ink);
+  }
+  p { max-width: 65ch; color: var(--ink-2); text-wrap: pretty; }
+  p.lead { font-size: 1.25rem; color: var(--ink-2); }
+  small.meta {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  a { color: var(--brand); text-decoration: none; border-bottom: 1px solid currentColor; }
+  a:hover { color: var(--brand-2); }
+
+  /* Nav rail */
+  nav.rail {
+    position: fixed;
+    right: clamp(16px, 2.5vw, 32px);
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    z-index: var(--z-nav);
+  }
+  nav.rail a {
+    width: 8px; height: 8px;
+    border: 1px solid var(--ink-2);
+    border-radius: 50%;
+    border-bottom-color: var(--ink-2);
+    transition: background 180ms cubic-bezier(0.22, 1, 0.36, 1),
+                transform 180ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  nav.rail a:hover { background: var(--ink); transform: scale(1.25); }
+
+  /* Top brand mark */
+  header.mark {
+    position: fixed;
+    top: clamp(20px, 3vw, 32px);
+    left: clamp(24px, 4vw, 48px);
+    z-index: var(--z-nav);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    color: var(--ink);
+    text-transform: uppercase;
+  }
+  header.mark .dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--brand);
+  }
+  header.mark .sep { color: var(--muted); }
+
+  /* ===== Slide 1 — Cover ===== */
+  .cover {
+    background:
+      radial-gradient(ellipse 80% 60% at 20% 30%, oklch(0.92 0.04 50 / 0.55), transparent 60%),
+      var(--bg);
+  }
+  .cover .stack { display: grid; gap: 28px; max-width: 1100px; }
+  .cover h1 { font-size: clamp(3rem, 7.6vw, 5.6rem); }
+  .cover .meta-row {
+    display: flex; gap: 24px; align-items: center;
+    margin-top: 8px;
+  }
+  .cover .meta-row .pill {
+    border: 1px solid var(--line);
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-2);
+    background: var(--surface);
+  }
+  .cover .footer-line {
+    display:flex; gap:18px; align-items:center;
+    margin-top:48px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+  }
+  .cover .footer-line .pulse {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--brand);
+    animation: pulse 2.4s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%      { opacity: 0.5; transform: scale(0.86); }
+  }
+
+  /* ===== Two-col layouts ===== */
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: clamp(32px, 4vw, 64px);
+    align-items: start;
+  }
+  @media (min-width: 880px) {
+    .grid-2 { grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr); }
+  }
+
+  /* ===== Command grid (categories, no identical cards) ===== */
+  .cmd-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1px;
+    background: var(--line);
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    overflow: hidden;
+  }
+  .cmd {
+    background: var(--bg);
+    padding: 22px 22px 18px;
+    display: grid;
+    gap: 10px;
+    transition: background 180ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .cmd:hover { background: var(--surface); }
+  .cmd .name {
+    font-family: var(--mono);
+    font-size: 14px;
+    color: var(--ink);
+    font-weight: 500;
+  }
+  .cmd .name::before {
+    content: "/impeccable ";
+    color: var(--muted);
+  }
+  .cmd .cat {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--brand);
+  }
+  .cmd p { font-size: 14px; color: var(--ink-2); margin: 0; }
+
+  /* ===== Palette swatches ===== */
+  .palette {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 16px;
+  }
+  .sw {
+    display: grid;
+    gap: 8px;
+    align-content: end;
+    aspect-ratio: 4 / 5;
+    padding: 16px;
+    border-radius: var(--r-md);
+    color: var(--bg);
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.06em;
+  }
+  .sw .role { font-weight: 600; }
+  .sw .val  { opacity: 0.85; }
+  .sw.brand  { background: var(--brand); }
+  .sw.brand2 { background: var(--brand-2); }
+  .sw.brand3 { background: var(--brand-3); color: var(--ink); }
+  .sw.ink    { background: var(--ink); }
+  .sw.ink2   { background: var(--ink-2); }
+  .sw.surf   { background: var(--surface); color: var(--ink); border: 1px solid var(--line); }
+  .sw.bg     { background: var(--bg); color: var(--ink); border: 1px solid var(--line); }
+
+  /* ===== Type spec table ===== */
+  table.spec {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    overflow: hidden;
+  }
+  table.spec th, table.spec td {
+    text-align: left;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--line);
+    font-size: 14px;
+    color: var(--ink-2);
+  }
+  table.spec th {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    background: var(--bg);
+  }
+  table.spec td:first-child {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--ink);
+  }
+  table.spec tr:last-child td { border-bottom: 0; }
+
+  /* ===== Bans list (full-border treatment, NOT side-stripe) ===== */
+  .ban-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 12px;
+  }
+  .ban {
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    background: var(--surface);
+    padding: 18px 20px;
+    display: grid;
+    gap: 8px;
+  }
+  .ban .x {
+    font-family: var(--mono);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--brand-2);
+  }
+  .ban strong { color: var(--ink); font-weight: 600; font-size: 15px; }
+  .ban p { font-size: 13.5px; margin: 0; color: var(--ink-2); }
+
+  /* ===== Register split ===== */
+  .register {
+    display: grid;
+    gap: 1px;
+    background: var(--line);
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    overflow: hidden;
+    grid-template-columns: 1fr;
+  }
+  @media (min-width: 760px) { .register { grid-template-columns: 1fr 1fr; } }
+  .reg-col {
+    background: var(--bg);
+    padding: 28px 28px 32px;
+    display: grid;
+    gap: 14px;
+  }
+  .reg-col h3 {
+    font-family: var(--display);
+    font-weight: 500;
+    font-size: 1.6rem;
+    letter-spacing: -0.015em;
+  }
+  .reg-col.brand   h3 em { color: var(--brand); font-style: italic; }
+  .reg-col.product h3 em { color: var(--ink); font-style: italic; }
+  .reg-col ul { margin: 0; padding-left: 20px; color: var(--ink-2); font-size: 14.5px; }
+  .reg-col li { margin: 4px 0; }
+
+  /* ===== Slop test visualization ===== */
+  .slop {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  @media (min-width: 780px) { .slop { grid-template-columns: 1fr 1fr; } }
+  .slop-card {
+    border: 1px solid var(--line);
+    background: var(--surface);
+    border-radius: var(--r-md);
+    padding: 24px;
+    display: grid;
+    gap: 12px;
+  }
+  .slop-card h4 {
+    font-family: var(--display);
+    font-weight: 500;
+    font-size: 1.3rem;
+    margin: 0;
+    letter-spacing: -0.015em;
+  }
+  .slop-card .tag {
+    width: fit-content;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    color: var(--muted);
+  }
+
+  /* ===== Workflow diagram ===== */
+  .flow {
+    display: grid;
+    gap: 14px;
+  }
+  .flow-step {
+    display: grid;
+    grid-template-columns: 56px 1fr;
+    gap: 18px;
+    align-items: start;
+    padding: 18px 22px 20px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+  }
+  .flow-step .n {
+    font-family: var(--display);
+    font-size: 2rem;
+    line-height: 1;
+    color: var(--brand);
+    font-weight: 500;
+  }
+  .flow-step h4 {
+    margin: 0 0 4px;
+    font-family: var(--body);
+    font-weight: 600;
+    font-size: 15px;
+    color: var(--ink);
+  }
+  .flow-step p { margin: 0; font-size: 14px; }
+  .flow-step code {
+    font-family: var(--mono);
+    font-size: 12px;
+    background: var(--bg);
+    border: 1px solid var(--line);
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: var(--ink);
+  }
+
+  /* ===== CTA buttons (with :active feedback per general rules) ===== */
+  .btn-row { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 16px; }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 20px;
+    border-radius: var(--r-sm);
+    font-family: var(--body);
+    font-weight: 600;
+    font-size: 14px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    text-decoration: none;
+    transition: transform 140ms cubic-bezier(0.22, 1, 0.36, 1),
+                background 180ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .btn:hover { transform: translateY(-1px); }
+  .btn:active { transform: translateY(0) scale(0.985); }
+  .btn.primary {
+    background: var(--ink);
+    color: var(--bg);
+  }
+  .btn.primary:hover { background: var(--brand-2); }
+  .btn.ghost {
+    background: transparent;
+    color: var(--ink);
+    border-color: var(--line);
+  }
+  .btn.ghost:hover { background: var(--surface); }
+
+  /* ===== Hero typography character ===== */
+  .display-spec {
+    display: grid;
+    gap: 28px;
+  }
+  .display-row {
+    display: grid;
+    grid-template-columns: 92px 1fr;
+    gap: 24px;
+    align-items: baseline;
+    padding-bottom: 22px;
+    border-bottom: 1px solid var(--line);
+  }
+  .display-row:last-child { border-bottom: 0; }
+  .display-row .label {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .display-row .sample { font-family: var(--display); color: var(--ink); }
+  .display-row.h1  .sample { font-size: clamp(2.4rem, 5vw, 4rem); line-height: 0.98; font-weight: 500; letter-spacing: -0.03em; }
+  .display-row.h2  .sample { font-size: clamp(1.8rem, 3.4vw, 2.6rem); line-height: 1.02; font-weight: 500; letter-spacing: -0.02em; }
+  .display-row.h3  .sample { font-size: 1.4rem; font-weight: 600; letter-spacing: -0.005em; font-family: var(--body); }
+  .display-row.body .sample { font-size: 1rem; line-height: 1.6; color: var(--ink-2); font-family: var(--body); max-width: 60ch; }
+  .display-row.mono .sample { font-size: 13px; font-family: var(--mono); color: var(--brand-2); letter-spacing: 0.04em; }
+
+  /* ===== Stat strip — NOT the hero-metric template (no big-number scaffold, no gradient accents) ===== */
+  .stat-strip {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 0;
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    overflow: hidden;
+  }
+  .stat-strip .stat {
+    padding: 22px 22px;
+    background: var(--bg);
+    border-right: 1px solid var(--line);
+    display: grid;
+    gap: 4px;
+  }
+  .stat-strip .stat:last-child { border-right: 0; }
+  .stat .label {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .stat .v { font-family: var(--display); font-size: 1.6rem; color: var(--ink); font-weight: 500; letter-spacing: -0.02em; }
+  .stat .note { font-size: 12.5px; color: var(--ink-2); }
+
+  /* ===== Motion reduced ===== */
+  @media (prefers-reduced-motion: reduce) {
+    * { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
+    .cover .footer-line .pulse { animation: none; }
+  }
+
+  /* ===== End mark ===== */
+  .end {
+    background: var(--ink);
+    color: var(--bg);
+  }
+  .end h2 { color: var(--bg); }
+  .end p  { color: oklch(0.84 0.01 50); }
+  .end small.meta { color: oklch(0.7 0.02 50); }
+  .end .btn.primary { background: var(--brand); color: var(--bg); }
+  .end .btn.primary:hover { background: var(--brand-3); color: var(--ink); }
+  .end .btn.ghost { color: var(--bg); border-color: oklch(0.4 0.01 50); }
+  .end .btn.ghost:hover { background: oklch(0.26 0.02 40); }
+</style>
+</head>
+<body>
+
+<header class="mark">
+  <span class="dot" aria-hidden="true"></span>
+  <span>Deck 01</span>
+  <span class="sep">/</span>
+  <span>Impeccable</span>
+</header>
+
+<nav class="rail" aria-label="Slides">
+  <a href="#s1" aria-label="Slide 1"></a>
+  <a href="#s2" aria-label="Slide 2"></a>
+  <a href="#s3" aria-label="Slide 3"></a>
+  <a href="#s4" aria-label="Slide 4"></a>
+  <a href="#s5" aria-label="Slide 5"></a>
+  <a href="#s6" aria-label="Slide 6"></a>
+  <a href="#s7" aria-label="Slide 7"></a>
+  <a href="#s8" aria-label="Slide 8"></a>
+  <a href="#s9" aria-label="Slide 9"></a>
+  <a href="#s10" aria-label="Slide 10"></a>
+  <a href="#s11" aria-label="Slide 11"></a>
+</nav>
+
+<main>
+
+  <!-- 01 — Cover -->
+  <section id="s1" class="slide cover">
+    <div class="stack">
+      <small class="meta">/impeccable · v3.5.0 · skill deck no. 01</small>
+      <h1>Production-grade design.<br><em>Committed</em> choices. No shortcuts.</h1>
+      <p class="lead">Impeccable is a project-level design skill: it loads your product context, picks a register, applies a strict ruleset, and ships ready-to-ship interfaces. It owns the full lifecycle — from <strong>init</strong> through <strong>polish</strong>.</p>
+      <div class="meta-row">
+        <span class="pill">25 commands</span>
+        <span class="pill">Brand · Product registers</span>
+        <span class="pill">OKLCH first</span>
+        <span class="pill">Anti-slop</span>
+      </div>
+      <div class="footer-line">
+        <span class="pulse" aria-hidden="true"></span>
+        Scroll · 11 slides
+      </div>
+    </div>
+  </section>
+
+  <!-- 02 — Philosophy -->
+  <section id="s2" class="slide">
+    <small class="meta">02 · Philosophy</small>
+    <div class="grid-2">
+      <div>
+        <h2>Design that doesn't look like AI made it.</h2>
+        <p class="lead">Impeccable is built around a single test: if someone could look at the interface and say <em>"AI made that"</em> without doubt, it has failed. Every rule, every ban, every command exists to push past the training-data reflex into a deliberate, defensible choice.</p>
+      </div>
+      <div>
+        <table class="spec" aria-label="Operating principles">
+          <thead>
+            <tr><th>Stance</th><th>Why it matters</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Read context first</td><td>PRODUCT.md, DESIGN.md, existing tokens — identity before invention.</td></tr>
+            <tr><td>Pick a register</td><td>Brand <em>IS</em> the product vs. design <em>serves</em> the product. Different rules.</td></tr>
+            <tr><td>Commit to one strategy</td><td>Restrained · Committed · Full palette · Drenched. Pick one.</td></tr>
+            <tr><td>Verify, don't assume</td><td>Contrast ratios. Reduced motion. Edge cases. Real browser testing.</td></tr>
+            <tr><td>Refuse the reflex</td><td>Match-and-rewrite when an absolute ban triggers.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- 03 — Setup flow -->
+  <section id="s3" class="slide">
+    <small class="meta">03 · Setup</small>
+    <h2>Five steps before a single pixel.</h2>
+    <p>Every invocation runs Setup first. Skipping any step produces generic output — and impeccable is explicit that "non-optional" means non-optional.</p>
+    <div class="flow">
+      <div class="flow-step">
+        <div class="n">1</div>
+        <div>
+          <h4>Load context</h4>
+          <p>Run <code>node .claude/skills/impeccable/scripts/context.mjs</code>. Either prints PRODUCT.md / DESIGN.md as a markdown block, or returns <code>NO_PRODUCT_MD</code> — in which case <strong>init</strong> runs first.</p>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="n">2</div>
+        <div>
+          <h4>Load the sub-command reference</h4>
+          <p>If the user invoked <code>craft</code> / <code>polish</code> / <code>shape</code> / etc., read <code>reference/&lt;command&gt;.md</code>. The reference owns the flow.</p>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="n">3</div>
+        <div>
+          <h4>Read the existing design system</h4>
+          <p>At least one CSS, theme, token, or representative component. Don't reinvent. Branch out only when UX wins.</p>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="n">4</div>
+        <div>
+          <h4>Pick the register</h4>
+          <p>Marketing / landing / portfolio → <code>reference/brand.md</code>. Dashboard / admin / tool → <code>reference/product.md</code>. Resolve by task cue → surface in focus → PRODUCT.md.</p>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="n">5</div>
+        <div>
+          <h4>Seed the palette if new</h4>
+          <p>Brand-new project with no committed colors? Run <code>palette.mjs</code> for a seed brand color and compose the rest in OKLCH.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 04 — Register split -->
+  <section id="s4" class="slide">
+    <small class="meta">04 · Register</small>
+    <h2>Brand or product. Pick one, and the rules change.</h2>
+    <p>Impeccable splits all design work into two registers because the success criteria differ. A landing page is allowed to be loud, a dashboard isn't. A product is allowed to be utility-shaped, a brand isn't.</p>
+    <div class="register">
+      <div class="reg-col brand">
+        <h3>Brand register — design <em>is</em> the product</h3>
+        <ul>
+          <li>Landing pages, portfolios, campaign sites, long-form editorial</li>
+          <li>One committed brand color carrying 30–60% of the surface</li>
+          <li>Voice and identity over neutral utility</li>
+          <li>Hero asset is real — never a gradient blob with text</li>
+          <li>Reflex-reject aesthetic lanes enforced (no SaaS-cream, no navy-and-gold by default)</li>
+        </ul>
+      </div>
+      <div class="reg-col product">
+        <h3>Product register — design <em>serves</em> the product</h3>
+        <ul>
+          <li>Dashboards, admin tools, app shells, data views</li>
+          <li>Restrained: tinted neutrals + one accent ≤10% surface</li>
+          <li>Information density is the success metric</li>
+          <li>States are first-class — loading, empty, error all designed</li>
+          <li>Semantic z-index scale; never arbitrary 9999</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- 05 — Type spec -->
+  <section id="s5" class="slide">
+    <small class="meta">05 · Typography</small>
+    <h2>Hierarchy is scale + weight, on a contrast pair.</h2>
+    <p>Two families, paired on a contrast axis: serif display + geometric sans. Max display ≤6rem. <code>text-wrap: balance</code> on h1–h3, <code>pretty</code> on prose. No all-caps body.</p>
+    <div class="display-spec">
+      <div class="display-row h1">
+        <div class="label">Display</div>
+        <div class="sample">A heading <em>balanced</em> across lines.</div>
+      </div>
+      <div class="display-row h2">
+        <div class="label">Section</div>
+        <div class="sample">Section heading at the next step down.</div>
+      </div>
+      <div class="display-row h3">
+        <div class="label">Sub</div>
+        <div class="sample">Sub-heading in body face, heavier weight.</div>
+      </div>
+      <div class="display-row body">
+        <div class="label">Body</div>
+        <div class="sample">Body copy at 65ch, pretty-wrapped, contrast verified against the surface. The most common AI failure mode is muted gray on a tinted near-white — fixed by biasing body toward the ink end of the ramp.</div>
+      </div>
+      <div class="display-row mono">
+        <div class="label">Mono</div>
+        <div class="sample">/impeccable polish src/components/Hero.tsx</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 06 — Palette -->
+  <section id="s6" class="slide">
+    <small class="meta">06 · Color · OKLCH</small>
+    <h2>Committed strategy. One color does the heavy lifting.</h2>
+    <p>The whole palette is OKLCH. Tinted neutrals are biased <em>toward the brand hue</em>, not toward warm-by-default. The "cream / sand / paper" band is the saturated AI default of 2026 and is explicitly avoided.</p>
+    <div class="palette">
+      <div class="sw brand"><span class="role">brand</span><span class="val">oklch(0.55 0.16 35)</span></div>
+      <div class="sw brand2"><span class="role">brand-2</span><span class="val">oklch(0.46 0.16 32)</span></div>
+      <div class="sw brand3"><span class="role">brand-3</span><span class="val">oklch(0.72 0.12 50)</span></div>
+      <div class="sw ink"><span class="role">ink</span><span class="val">oklch(0.18 0.02 40)</span></div>
+      <div class="sw ink2"><span class="role">ink-2</span><span class="val">oklch(0.32 0.02 40)</span></div>
+      <div class="sw surf"><span class="role">surface</span><span class="val">oklch(0.94 0.012 55)</span></div>
+      <div class="sw bg"><span class="role">bg</span><span class="val">oklch(0.97 0.008 60)</span></div>
+    </div>
+  </section>
+
+  <!-- 07 — Commands -->
+  <section id="s7" class="slide">
+    <small class="meta">07 · Commands</small>
+    <h2>Twenty-five commands, four altitudes.</h2>
+    <p>Commands are grouped by intent: Build new, Evaluate, Refine, Enhance, Fix, Iterate. Each is a tiny skill of its own. Run <code>/impeccable</code> with no argument and the menu is context-aware — pulled from current signals (changed files, register, presence of devserver, last critique score).</p>
+    <div class="cmd-grid">
+      <div class="cmd"><span class="cat">build</span><span class="name">craft</span><p>Shape, then build a feature end-to-end.</p></div>
+      <div class="cmd"><span class="cat">build</span><span class="name">shape</span><p>Plan UX/UI before writing code.</p></div>
+      <div class="cmd"><span class="cat">build</span><span class="name">init</span><p>Set up PRODUCT.md, DESIGN.md, live config.</p></div>
+      <div class="cmd"><span class="cat">build</span><span class="name">document</span><p>Generate DESIGN.md from existing code.</p></div>
+      <div class="cmd"><span class="cat">build</span><span class="name">extract</span><p>Pull reusable tokens and components.</p></div>
+      <div class="cmd"><span class="cat">evaluate</span><span class="name">critique</span><p>UX design review with heuristic scoring.</p></div>
+      <div class="cmd"><span class="cat">evaluate</span><span class="name">audit</span><p>Technical quality: a11y, perf, responsive.</p></div>
+      <div class="cmd"><span class="cat">refine</span><span class="name">polish</span><p>Final quality pass before shipping.</p></div>
+      <div class="cmd"><span class="cat">refine</span><span class="name">bolder</span><p>Amplify safe or bland designs.</p></div>
+      <div class="cmd"><span class="cat">refine</span><span class="name">quieter</span><p>Tone down aggressive designs.</p></div>
+      <div class="cmd"><span class="cat">refine</span><span class="name">distill</span><p>Strip to essence, remove complexity.</p></div>
+      <div class="cmd"><span class="cat">refine</span><span class="name">harden</span><p>Errors, i18n, edge cases.</p></div>
+      <div class="cmd"><span class="cat">refine</span><span class="name">onboard</span><p>First-run flows, empty states, activation.</p></div>
+      <div class="cmd"><span class="cat">enhance</span><span class="name">animate</span><p>Add purposeful motion.</p></div>
+      <div class="cmd"><span class="cat">enhance</span><span class="name">colorize</span><p>Strategic color into monochrome.</p></div>
+      <div class="cmd"><span class="cat">enhance</span><span class="name">typeset</span><p>Improve typography and hierarchy.</p></div>
+      <div class="cmd"><span class="cat">enhance</span><span class="name">layout</span><p>Fix spacing, rhythm, hierarchy.</p></div>
+      <div class="cmd"><span class="cat">enhance</span><span class="name">delight</span><p>Personality and memorable touches.</p></div>
+      <div class="cmd"><span class="cat">enhance</span><span class="name">overdrive</span><p>Push past conventional limits.</p></div>
+      <div class="cmd"><span class="cat">fix</span><span class="name">clarify</span><p>UX copy, labels, error messages.</p></div>
+      <div class="cmd"><span class="cat">fix</span><span class="name">adapt</span><p>Adapt to devices and screen sizes.</p></div>
+      <div class="cmd"><span class="cat">fix</span><span class="name">optimize</span><p>Diagnose and fix UI performance.</p></div>
+      <div class="cmd"><span class="cat">iterate</span><span class="name">live</span><p>Browser-driven visual variant mode.</p></div>
+      <div class="cmd"><span class="cat">manage</span><span class="name">pin / unpin</span><p>Shortcut a sub-command to its own slash.</p></div>
+    </div>
+  </section>
+
+  <!-- 08 — Absolute bans -->
+  <section id="s8" class="slide">
+    <small class="meta">08 · Absolute bans</small>
+    <h2>Match and rewrite. No exceptions.</h2>
+    <p>These are not preferences. They are tells. If you find yourself about to write one, rewrite the element with a different structure.</p>
+    <div class="ban-grid">
+      <div class="ban"><span class="x">Banned</span><strong>Side-stripe borders</strong><p>Coloured <code>border-left</code> on cards, list items, callouts. Rewrite with full borders, tints, or leading numbers.</p></div>
+      <div class="ban"><span class="x">Banned</span><strong>Gradient text</strong><p><code>background-clip: text</code> + gradient. Decorative, never meaningful. Solid color. Emphasis via weight or size.</p></div>
+      <div class="ban"><span class="x">Banned</span><strong>Default glassmorphism</strong><p>Blurs and glass cards used decoratively. Rare and purposeful, or nothing.</p></div>
+      <div class="ban"><span class="x">Banned</span><strong>The hero-metric template</strong><p>Big number, small label, supporting stats, gradient accent. SaaS cliché.</p></div>
+      <div class="ban"><span class="x">Banned</span><strong>Identical card grids</strong><p>Same-sized cards with icon + heading + text, repeated endlessly.</p></div>
+      <div class="ban"><span class="x">Banned</span><strong>Eyebrow on every section</strong><p>The tiny uppercase tracked kicker is AI grammar when it's everywhere. One named kicker is voice.</p></div>
+      <div class="ban"><span class="x">Banned</span><strong>Numbered scaffolding</strong><p>01 / 02 / 03 above every section. Numbers earn their place only when the section IS a sequence.</p></div>
+      <div class="ban"><span class="x">Banned</span><strong>Overflowing headings</strong><p>Long words + large clamp + narrow grids = headline overflow on tablet. Test every breakpoint.</p></div>
+    </div>
+  </section>
+
+  <!-- 09 — Slop test -->
+  <section id="s9" class="slide">
+    <small class="meta">09 · The AI slop test</small>
+    <h2>Two altitudes. The second catches what the first misses.</h2>
+    <p>If someone could look at this interface and say "AI made that" without doubt, it has failed. Cross-register failures are the absolute bans. Register-specific failures live in each reference file.</p>
+    <div class="slop">
+      <div class="slop-card">
+        <span class="tag">First-order</span>
+        <h4>Could they guess theme + palette from the category alone?</h4>
+        <p>Fintech that's navy-and-gold. AI tools that are SaaS-cream. Wellness that's beige-pale. If the category gives the answer, it's the first training-data reflex. Rework the scene sentence and color strategy.</p>
+      </div>
+      <div class="slop-card">
+        <span class="tag">Second-order</span>
+        <h4>Could they guess from category-plus-anti-references?</h4>
+        <p>"AI tool that's not SaaS-cream → editorial-typographic." "Fintech that's not navy → terminal-dark." The trap one tier deeper. The first reflex was avoided; the second wasn't. Rework until neither is obvious.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 10 — Working with impeccable -->
+  <section id="s10" class="slide">
+    <small class="meta">10 · How to use it</small>
+    <h2>Conversational shapes that get the best output.</h2>
+    <div class="grid-2">
+      <div>
+        <p>The interface accepts free-text intent and routes to commands. Use any of these shapes, or invoke a command directly. Bare <code>/impeccable</code> shows a context-aware menu pulled from current signals.</p>
+        <div class="btn-row">
+          <a class="btn primary" href="#s11">Continue →</a>
+          <a class="btn ghost" href="#s1">Back to top</a>
+        </div>
+      </div>
+      <div>
+        <table class="spec" aria-label="Invocation shapes">
+          <thead><tr><th>Say</th><th>Routes to</th></tr></thead>
+          <tbody>
+            <tr><td>/impeccable</td><td>Context-aware menu</td></tr>
+            <tr><td>/impeccable craft hero</td><td>Build flow, scoped to the hero</td></tr>
+            <tr><td>"fix the spacing"</td><td>layout</td></tr>
+            <tr><td>"the colors feel flat"</td><td>colorize</td></tr>
+            <tr><td>"rewrite this error"</td><td>clarify</td></tr>
+            <tr><td>"make it less loud"</td><td>quieter</td></tr>
+            <tr><td>"prepare for launch"</td><td>harden + polish</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- 11 — End -->
+  <section id="s11" class="slide end">
+    <small class="meta">Fin · Deck 01 of 04</small>
+    <h2>Impeccable, in one sentence.</h2>
+    <p class="lead">A project-level design skill that loads context, picks a register, applies committed strategy, and runs sub-commands to ship production-grade interfaces — refusing the AI reflex on contact.</p>
+    <div class="stat-strip">
+      <div class="stat"><span class="label">Version</span><span class="v">3.5.0</span><span class="note">Stable, user-invocable</span></div>
+      <div class="stat"><span class="label">Commands</span><span class="v">25</span><span class="note">Six categories</span></div>
+      <div class="stat"><span class="label">Registers</span><span class="v">2</span><span class="note">brand · product</span></div>
+      <div class="stat"><span class="label">Scope</span><span class="v">Project</span><span class="note">Full lifecycle</span></div>
+    </div>
+    <div class="btn-row">
+      <a class="btn primary" href="index.html">All four decks</a>
+      <a class="btn ghost" href="deck-design-taste-frontend.html">Next · design-taste-frontend →</a>
+    </div>
+  </section>
+
+</main>
+</body>
+</html>

@@ -1,0 +1,908 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Deck 02 — design-taste-frontend</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  /* ============================================================
+     Built per design-taste-frontend (tasteskill) rules.
+     Design Read: "Reading this as: explainer deck for design-engineering
+       peers, with an editorial-typographic language, leaning toward
+       Tailwind utilities + Geist + restrained motion."
+     Dials: VARIANCE 7 · MOTION 5 · DENSITY 4
+     Stack: Geist + Geist Mono. NOT Inter.
+     Palette: Pure monochrome + electric-blue pop (Section 4.2
+       alternative). NOT beige+brass, NOT AI-purple.
+     Theme lock: light. One theme top to bottom.
+     Hero: max 4 elements, fits viewport, ≤pt-24 top padding.
+     Eyebrow: max 1 per 3 sections. 11 sections → max 3 eyebrows.
+     Section layout repetition: each family appears at most once.
+     ============================================================ */
+  :root {
+    --ink:      #0c0c0e;            /* off-black */
+    --ink-2:    #2a2a2e;
+    --muted:    #6a6a73;
+    --line:     #e5e5e8;
+    --line-2:   #efeff2;
+    --bg:       #f7f6f3;            /* slightly warm off-white, NOT cream */
+    --surface:  #ffffff;
+    --accent:   #1a4cff;            /* electric blue, single saturated pop */
+    --accent-2: #0c2fa8;
+    --accent-soft: #e8edff;
+
+    --sans: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    --mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+    /* Shape consistency lock — chosen scale: medium soft */
+    --r-xs: 4px;
+    --r-sm: 8px;
+    --r-md: 14px;
+    --r-lg: 20px;
+
+    --z-nav: 20;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  html { scroll-behavior: smooth; }
+
+  main {
+    scroll-snap-type: y mandatory;
+    overflow-y: auto;
+    height: 100vh;
+  }
+  section.slide {
+    scroll-snap-align: start;
+    min-height: 100dvh;
+    padding: clamp(56px, 7vw, 96px) clamp(24px, 6vw, 88px);
+    display: grid;
+    align-content: center;
+    gap: 32px;
+    border-bottom: 1px solid var(--line);
+    position: relative;
+  }
+
+  /* Typography — sans display, tight tracking */
+  h1, h2, h3 {
+    font-family: var(--sans);
+    color: var(--ink);
+    font-weight: 600;
+    letter-spacing: -0.025em;
+    text-wrap: balance;
+    margin: 0;
+  }
+  h1 { font-size: clamp(2.8rem, 6.2vw, 5.4rem); line-height: 0.98; letter-spacing: -0.038em; font-weight: 700; }
+  h1 .accent { color: var(--accent); }
+  h2 { font-size: clamp(1.9rem, 3.8vw, 3rem); line-height: 1.04; }
+  h3 { font-size: 1.05rem; font-weight: 600; letter-spacing: -0.005em; }
+  p  { max-width: 65ch; color: var(--ink-2); text-wrap: pretty; margin: 0; }
+  p.lead { font-size: 1.2rem; color: var(--ink-2); max-width: 60ch; }
+
+  /* Eyebrow — used SPARINGLY (the deck is ~11 slides → max 3 eyebrows allowed) */
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 500;
+  }
+
+  /* Top mark */
+  header.mark {
+    position: fixed;
+    top: clamp(20px, 3vw, 30px);
+    left: clamp(24px, 4vw, 48px);
+    z-index: var(--z-nav);
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--ink);
+    letter-spacing: 0.04em;
+  }
+  header.mark .square {
+    width: 10px; height: 10px;
+    background: var(--accent);
+  }
+
+  nav.rail {
+    position: fixed;
+    right: clamp(16px, 2.5vw, 32px);
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: var(--z-nav);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  nav.rail a {
+    width: 22px;
+    height: 1px;
+    background: var(--ink);
+    opacity: 0.3;
+    transition: opacity 200ms cubic-bezier(0.22,1,0.36,1),
+                width    200ms cubic-bezier(0.22,1,0.36,1);
+  }
+  nav.rail a:hover { opacity: 1; width: 32px; }
+
+  /* ===== Slide 01 — Cover with Design Read PROMINENT ===== */
+  /* Anti-center bias: split-screen at variance 7 */
+  .cover {
+    display: grid;
+    grid-template-columns: 1fr;
+    align-items: center;
+    gap: 48px;
+    background: var(--bg);
+  }
+  @media (min-width: 880px) {
+    .cover { grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr); }
+  }
+  .cover-meta { display: grid; gap: 24px; max-width: 36rem; }
+  .read-box {
+    border: 1px solid var(--line);
+    background: var(--surface);
+    border-radius: var(--r-md);
+    padding: 22px 26px;
+    display: grid;
+    gap: 8px;
+  }
+  .read-box .label {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  .read-box .read {
+    font-size: 15.5px;
+    color: var(--ink);
+    line-height: 1.55;
+  }
+  .read-box .read em { font-style: italic; color: var(--ink); font-weight: 500; }
+
+  /* Hero asset side — visual product (real image required) */
+  .cover-asset {
+    aspect-ratio: 5 / 6;
+    border-radius: var(--r-md);
+    background:
+      url("https://picsum.photos/seed/taste-skill-editorial-monochrome/900/1100") center/cover no-repeat,
+      var(--ink);
+    box-shadow: 0 30px 60px -30px rgba(20,20,32,0.35);
+    position: relative;
+    overflow: hidden;
+  }
+  .cover-asset::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, transparent 40%, rgba(12,12,14,0.62) 100%);
+    pointer-events: none;
+  }
+  .cover-asset .caption {
+    position: absolute;
+    left: 22px; right: 22px; bottom: 18px;
+    color: #fff;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    z-index: 1;
+    display: flex;
+    justify-content: space-between;
+  }
+  .cover h1 { max-width: 14ch; }
+
+  /* CTA buttons — text fits one line, max 3 words, scale-on-press feedback */
+  .btn-row { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 8px; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 10px;
+    padding: 11px 18px;
+    border-radius: var(--r-sm);
+    font-family: var(--sans);
+    font-weight: 600;
+    font-size: 14px;
+    letter-spacing: -0.005em;
+    cursor: pointer;
+    border: 1px solid transparent;
+    text-decoration: none;
+    transition: transform 160ms cubic-bezier(0.22,1,0.36,1),
+                background  180ms cubic-bezier(0.22,1,0.36,1);
+    white-space: nowrap;
+  }
+  .btn:hover { transform: translateY(-1px); }
+  .btn:active { transform: scale(0.97); }
+  .btn.primary { background: var(--ink); color: #fff; }
+  .btn.primary:hover { background: var(--accent); }
+  .btn.ghost { background: transparent; color: var(--ink); border-color: var(--line); }
+  .btn.ghost:hover { background: var(--surface); }
+
+  /* ===== Slide 02 — Three Dials (different layout family) ===== */
+  .dials {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+  @media (min-width: 880px) { .dials { grid-template-columns: repeat(3, 1fr); } }
+  .dial {
+    border: 1px solid var(--line);
+    background: var(--surface);
+    border-radius: var(--r-md);
+    padding: 26px 26px 22px;
+    display: grid;
+    gap: 18px;
+  }
+  .dial .name {
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    color: var(--ink);
+    font-weight: 600;
+  }
+  .dial .value {
+    font-family: var(--sans);
+    font-size: 4.2rem;
+    line-height: 1;
+    font-weight: 700;
+    letter-spacing: -0.05em;
+    color: var(--ink);
+  }
+  .dial .scale {
+    display: flex;
+    align-items: end;
+    gap: 4px;
+    height: 36px;
+  }
+  .dial .scale span {
+    flex: 1;
+    background: var(--line);
+    border-radius: 1px;
+  }
+  .dial .scale span.on { background: var(--accent); }
+  .dial .ends {
+    display: flex;
+    justify-content: space-between;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .dial p { font-size: 13.5px; color: var(--ink-2); }
+
+  /* ===== Slide 03 — Design system map (table layout — different family) ===== */
+  table.map {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    overflow: hidden;
+  }
+  table.map th, table.map td {
+    text-align: left;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--line-2);
+    font-size: 14px;
+    color: var(--ink-2);
+    vertical-align: top;
+  }
+  table.map th {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    background: var(--bg);
+  }
+  table.map td:first-child {
+    color: var(--ink);
+    font-weight: 500;
+  }
+  table.map td code {
+    font-family: var(--mono);
+    font-size: 12px;
+    background: var(--accent-soft);
+    color: var(--accent-2);
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+  table.map tr:last-child td { border-bottom: 0; }
+
+  /* ===== Slide 04 — Anti-default (asymmetric do/dont) ===== */
+  .dodont {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+  @media (min-width: 880px) {
+    .dodont { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+  }
+  .dd {
+    padding: 22px;
+    border-radius: var(--r-md);
+    display: grid;
+    gap: 8px;
+    border: 1px solid var(--line);
+    background: var(--surface);
+  }
+  .dd .tag {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+  .dd.bad .tag { color: var(--ink); }
+  .dd.good .tag { color: var(--accent); }
+  .dd strong { font-size: 15px; color: var(--ink); font-weight: 600; }
+  .dd p { font-size: 13.5px; }
+  .dd.bad { background: var(--bg); border-color: var(--line); position: relative; }
+  .dd.bad::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      repeating-linear-gradient(135deg, transparent 0 11px, rgba(12,12,14,0.04) 11px 12px);
+    pointer-events: none;
+    border-radius: inherit;
+  }
+
+  /* ===== Slide 05 — Hero discipline (bento with rhythm) ===== */
+  .bento {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    grid-auto-rows: minmax(120px, auto);
+    gap: 14px;
+  }
+  .b {
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    background: var(--surface);
+    padding: 22px;
+    display: grid;
+    align-content: space-between;
+    gap: 12px;
+  }
+  .b .h {
+    font-size: 13px;
+    font-family: var(--mono);
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .b .v {
+    font-size: 1.55rem;
+    line-height: 1.05;
+    color: var(--ink);
+    letter-spacing: -0.025em;
+    font-weight: 600;
+  }
+  .b p { font-size: 13.5px; max-width: 38ch; }
+  .b1 { grid-column: span 6; }
+  @media (min-width: 720px) {
+    .b1 { grid-column: span 4; grid-row: span 2; background: var(--ink); color: #fff; }
+    .b1 .h { color: rgba(255,255,255,0.7); }
+    .b1 .v { color: #fff; font-size: 2.2rem; }
+    .b1 p  { color: rgba(255,255,255,0.78); }
+    .b2 { grid-column: span 2; }
+    .b3 { grid-column: span 2; background: var(--accent); color: #fff; }
+    .b3 .h { color: rgba(255,255,255,0.85); }
+    .b3 .v { color: #fff; }
+    .b4 { grid-column: span 3; }
+    .b5 { grid-column: span 3; }
+  }
+
+  /* ===== Slide 06 — Eyebrow restraint (a horizontal scroll-snap pill row, different family) ===== */
+  .pill-row {
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    padding: 6px 2px 12px;
+    scroll-snap-type: x mandatory;
+  }
+  .pill-row::-webkit-scrollbar { height: 6px; }
+  .pill-row::-webkit-scrollbar-thumb { background: var(--line); border-radius: 4px; }
+  .pill {
+    scroll-snap-align: start;
+    flex: 0 0 auto;
+    border: 1px solid var(--line);
+    background: var(--surface);
+    border-radius: 999px;
+    padding: 18px 24px;
+    display: grid;
+    gap: 6px;
+    min-width: 260px;
+  }
+  .pill .k {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .pill .v { font-size: 15px; font-weight: 500; color: var(--ink); letter-spacing: -0.005em; }
+
+  /* ===== Slide 07 — Layout diversification (single-column manifesto layout) ===== */
+  .manifesto {
+    max-width: 60ch;
+    display: grid;
+    gap: 20px;
+  }
+  .manifesto .rule {
+    display: grid;
+    grid-template-columns: 20px 1fr;
+    gap: 14px;
+    align-items: start;
+  }
+  .manifesto .rule .b {
+    width: 8px; height: 8px;
+    background: var(--accent);
+    margin-top: 9px;
+  }
+  .manifesto .rule p { margin: 0; font-size: 15px; color: var(--ink); max-width: 56ch; }
+  .manifesto .rule p strong { color: var(--ink); font-weight: 600; }
+
+  /* ===== Slide 08 — Color calibration (swatch grid + ban callouts, different family) ===== */
+  .palette-row { display: grid; gap: 16px; }
+  @media (min-width: 760px) { .palette-row { grid-template-columns: 1.1fr 0.9fr; } }
+  .swatches {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+  }
+  .sw {
+    aspect-ratio: 1;
+    border-radius: var(--r-sm);
+    border: 1px solid var(--line);
+    display: grid;
+    align-content: end;
+    padding: 8px;
+    font-family: var(--mono);
+    font-size: 9.5px;
+    letter-spacing: 0.04em;
+    text-transform: lowercase;
+    color: var(--ink);
+  }
+  .sw.dark { background: var(--ink); color: #fff; border-color: var(--ink); }
+  .sw.mid  { background: var(--ink-2); color: #fff; border-color: var(--ink-2); }
+  .sw.mut  { background: var(--muted); color: #fff; border-color: var(--muted); }
+  .sw.line { background: var(--line); }
+  .sw.bg   { background: var(--bg); }
+  .sw.surf { background: var(--surface); }
+  .sw.accent { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .sw.accent2{ background: var(--accent-2); color: #fff; border-color: var(--accent-2); }
+  .sw.soft { background: var(--accent-soft); }
+
+  .ban-list {
+    display: grid;
+    gap: 10px;
+  }
+  .ban-row {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 6px;
+    padding: 14px 16px;
+    border: 1px solid var(--line);
+    border-radius: var(--r-sm);
+    background: var(--surface);
+  }
+  .ban-row .head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 10px;
+  }
+  .ban-row .name { font-weight: 600; color: var(--ink); font-size: 14.5px; }
+  .ban-row .x {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  .ban-row p { font-size: 13px; }
+
+  /* ===== Slide 09 — Image strategy (real image overlays, no fake screenshots) ===== */
+  .img-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  @media (min-width: 800px) { .img-grid { grid-template-columns: 1.4fr 1fr 1fr; } }
+  .img {
+    border-radius: var(--r-md);
+    overflow: hidden;
+    aspect-ratio: 4 / 3;
+    position: relative;
+    background: var(--ink);
+  }
+  .img img {
+    width: 100%; height: 100%; object-fit: cover; display: block;
+    filter: grayscale(0.05);
+  }
+  .img .cap {
+    position: absolute;
+    left: 14px; right: 14px; bottom: 12px;
+    color: #fff;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.05em;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.4);
+  }
+  .img.tall { aspect-ratio: 3 / 4; }
+
+  /* ===== Slide 10 — Pre-Flight checklist (final form: checklist UI, different family) ===== */
+  .preflight {
+    display: grid;
+    gap: 10px;
+  }
+  .pf {
+    display: grid;
+    grid-template-columns: 28px 1fr auto;
+    gap: 14px;
+    align-items: center;
+    padding: 14px 18px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--r-sm);
+  }
+  .pf .chk {
+    width: 18px; height: 18px;
+    border-radius: 4px;
+    background: var(--accent);
+    color: #fff;
+    display: grid; place-items: center;
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .pf .what { font-size: 14px; color: var(--ink); font-weight: 500; }
+  .pf .why  { font-size: 12.5px; color: var(--muted); font-family: var(--mono); letter-spacing: 0.02em; }
+
+  /* ===== End slide ===== */
+  .end {
+    background: var(--ink);
+    color: #fff;
+  }
+  .end h2 { color: #fff; }
+  .end p  { color: rgba(255,255,255,0.72); }
+  .end .eyebrow { color: rgba(255,255,255,0.55); }
+  .end .btn.primary { background: var(--accent); }
+  .end .btn.primary:hover { background: #4f7bff; }
+  .end .btn.ghost  { color: #fff; border-color: rgba(255,255,255,0.2); }
+  .end .btn.ghost:hover { background: rgba(255,255,255,0.05); }
+  .end .stat-row {
+    display: grid;
+    gap: 0;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: var(--r-md);
+    overflow: hidden;
+  }
+  .end .stat {
+    padding: 22px;
+    background: rgba(255,255,255,0.03);
+    border-right: 1px solid rgba(255,255,255,0.1);
+    display: grid;
+    gap: 4px;
+  }
+  .end .stat:last-child { border-right: 0; }
+  .end .stat .lbl {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.55);
+  }
+  .end .stat .vv { font-size: 1.6rem; font-weight: 600; color: #fff; letter-spacing: -0.025em; }
+
+  /* Reduced-motion */
+  @media (prefers-reduced-motion: reduce) {
+    * { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
+  }
+</style>
+</head>
+<body>
+
+<header class="mark">
+  <span class="square" aria-hidden="true"></span>
+  <span>Deck 02</span>
+  <span style="color: var(--muted);">/</span>
+  <span>design-taste-frontend</span>
+</header>
+
+<nav class="rail" aria-label="Slides">
+  <a href="#s1"></a><a href="#s2"></a><a href="#s3"></a><a href="#s4"></a><a href="#s5"></a>
+  <a href="#s6"></a><a href="#s7"></a><a href="#s8"></a><a href="#s9"></a><a href="#s10"></a>
+  <a href="#s11"></a>
+</nav>
+
+<main>
+
+  <!-- 01 — Cover (split-screen, anti-center bias at VARIANCE 7) -->
+  <section id="s1" class="slide cover">
+    <div class="cover-meta">
+      <span class="eyebrow">Skill no. 02 · the taste skill</span>
+      <h1>Read the room. <span class="accent">Then</span> reach for code.</h1>
+      <p class="lead">Most LLM design output is bad because the model jumps to a default aesthetic instead of reading the brief. This skill makes inference the first step, and ships landing pages, portfolios, and redesigns that don't look templated.</p>
+
+      <div class="read-box">
+        <span class="label">Design Read</span>
+        <p class="read">Reading this as: <em>explainer deck</em> for design-engineering peers, with an <em>editorial-typographic</em> language, leaning toward <em>Tailwind utilities + Geist + restrained motion</em>.</p>
+      </div>
+
+      <div class="btn-row">
+        <a class="btn primary" href="#s2">Read the dials</a>
+        <a class="btn ghost" href="index.html">All decks</a>
+      </div>
+    </div>
+
+    <div class="cover-asset" aria-label="Cover photography">
+      <div class="caption">
+        <span>VARIANCE 7</span>
+        <span>MOTION 5</span>
+        <span>DENSITY 4</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 02 — The Three Dials (grid family) -->
+  <section id="s2" class="slide">
+    <h2>The three dials.</h2>
+    <p>After the Design Read, set three dials. Every layout, motion, and density decision below is gated by them. Baseline 8 / 6 / 4. The read can override.</p>
+    <div class="dials">
+      <div class="dial">
+        <span class="name">VARIANCE</span>
+        <span class="value">7</span>
+        <div class="scale">
+          <span></span><span></span><span></span><span></span>
+          <span class="on"></span><span class="on"></span><span class="on"></span>
+          <span></span><span></span><span></span>
+        </div>
+        <div class="ends"><span>Symmetry</span><span>Chaos</span></div>
+        <p>Layout asymmetry, breaking-from-template energy. 1 means perfect grid. 10 means artsy collage.</p>
+      </div>
+      <div class="dial">
+        <span class="name">MOTION</span>
+        <span class="value">5</span>
+        <div class="scale">
+          <span></span><span></span><span></span>
+          <span class="on"></span><span class="on"></span>
+          <span></span><span></span><span></span><span></span><span></span>
+        </div>
+        <div class="ends"><span>Static</span><span>Cinematic</span></div>
+        <p>How much the page moves. 5 is restrained: entry transitions, scroll-reveal, hover physics on CTAs.</p>
+      </div>
+      <div class="dial">
+        <span class="name">DENSITY</span>
+        <span class="value">4</span>
+        <div class="scale">
+          <span></span><span></span>
+          <span class="on"></span><span class="on"></span>
+          <span></span><span></span><span></span><span></span><span></span><span></span>
+        </div>
+        <div class="ends"><span>Gallery</span><span>Cockpit</span></div>
+        <p>How packed the surface is. 4 is editorial breathing room; 8 is dashboard.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 03 — Brief → Design System Map (table family) -->
+  <section id="s3" class="slide">
+    <h2>Brief → System map.</h2>
+    <p>When the brief reads as one of these, reach for the <em>official</em> package. Don't reinvent. Don't import tokens and override 90% of them.</p>
+    <table class="map">
+      <thead>
+        <tr>
+          <th>Brief reads as…</th>
+          <th>Reach for</th>
+          <th>Why</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>Enterprise SaaS · dashboards</td><td><code>@fluentui/react-components</code></td><td>Official Fluent UI, Microsoft tokens, a11y done</td></tr>
+        <tr><td>Material-flavored product</td><td><code>@material/web</code></td><td>Theme-able via Material Theming</td></tr>
+        <tr><td>B2B analytics · IBM-style</td><td><code>@carbon/react</code></td><td>Mature data-density patterns</td></tr>
+        <tr><td>Shopify admin surface</td><td><code>polaris.js</code></td><td>Required for admin UI</td></tr>
+        <tr><td>Atlassian / Jira product</td><td><code>@atlaskit/*</code></td><td>Official Atlassian DS</td></tr>
+        <tr><td>GitHub-style devtool / brand</td><td><code>@primer/css</code></td><td>Primer; brand variant for marketing</td></tr>
+        <tr><td>UK public-sector service</td><td><code>govuk-frontend</code></td><td>Legally / regulatorily expected</td></tr>
+        <tr><td>US public-sector trust-first</td><td><code>uswds</code></td><td>Same</td></tr>
+        <tr><td>Modern accessible React</td><td><code>@radix-ui/themes</code></td><td>Primitives + polished theme</td></tr>
+        <tr><td>SaaS where you own components</td><td><code>shadcn/ui</code></td><td>Own the code, easy to customise</td></tr>
+        <tr><td>Tailwind-based modern SaaS</td><td><code>tailwindcss v4</code></td><td>Default for indie + small team builds</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 04 — Anti-default (do/don't asymmetric family) -->
+  <section id="s4" class="slide">
+    <span class="eyebrow">02 of 03 eyebrows used</span>
+    <h2>Anti-default discipline.</h2>
+    <p>Override the LLM reflex. Every default below has a context-aware replacement.</p>
+    <div class="dodont">
+      <div class="dd bad"><span class="tag">Avoid</span><strong>AI-purple gradients</strong><p>No auto purple button glows. No mesh gradients on a centered hero.</p></div>
+      <div class="dd good"><span class="tag">Reach for</span><strong>One saturated accent</strong><p>Neutral base (Zinc / Slate / Stone) + a single high-contrast accent.</p></div>
+      <div class="dd bad"><span class="tag">Avoid</span><strong>Inter + slate-900</strong><p>The default tells. Inter is OK only when the brief explicitly wants neutral.</p></div>
+      <div class="dd good"><span class="tag">Reach for</span><strong>Geist · Outfit · Cabinet Grotesk</strong><p>Sans display fonts are the right default. Black is not "boring."</p></div>
+      <div class="dd bad"><span class="tag">Avoid</span><strong>Beige + brass + espresso</strong><p>The premium-consumer AI default. Every cookware, every wellness, every artisan brief.</p></div>
+      <div class="dd good"><span class="tag">Reach for</span><strong>Rotated palettes</strong><p>Cobalt+cream · forest+amber · terracotta+slate · black+tan · monochrome+pop.</p></div>
+      <div class="dd bad"><span class="tag">Avoid</span><strong>Centered hero over mesh</strong><p>Avoided at VARIANCE > 4. Split, asymmetric, scroll-pinned instead.</p></div>
+      <div class="dd good"><span class="tag">Reach for</span><strong>Split-screen + real photography</strong><p>50/50, left-content / right-asset, or asymmetric white-space.</p></div>
+    </div>
+  </section>
+
+  <!-- 05 — Hero discipline (bento with rhythm) -->
+  <section id="s5" class="slide">
+    <h2>Hero discipline.</h2>
+    <p>The hero is a single moment, not a feature list. Max 4 text elements. Fits in the initial viewport. Top padding ≤ 6rem.</p>
+    <div class="bento">
+      <div class="b b1">
+        <span class="h">Hero stack (max 4)</span>
+        <div>
+          <div class="v">Eyebrow · Headline · Sub · CTA</div>
+          <p>Pick ZERO or ONE small element above the headline. Subtext max 20 words, max 4 lines. CTAs: 1 primary + at most 1 secondary.</p>
+        </div>
+      </div>
+      <div class="b b2">
+        <span class="h">Viewport</span>
+        <span class="v">100dvh</span>
+        <p>Never <code>h-screen</code>. iOS Safari jumps the bar.</p>
+      </div>
+      <div class="b b3">
+        <span class="h">Top padding</span>
+        <span class="v">pt-24 cap</span>
+        <p>More floats content halfway down. Increase scale instead.</p>
+      </div>
+      <div class="b b4">
+        <span class="h">Banned in hero</span>
+        <p>Tiny tagline below CTAs · trust micro-strip · pricing teaser · feature bullets · avatar row. All move below.</p>
+      </div>
+      <div class="b b5">
+        <span class="h">Trust logos</span>
+        <p>"Used by" wall belongs UNDER the hero. Real SVGs, not text wordmarks.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 06 — Eyebrow restraint (pill-row family) -->
+  <section id="s6" class="slide">
+    <h2>Eyebrow restraint.</h2>
+    <p>The single most-violated rule. Max one eyebrow per three sections. This deck has 11 slides → 3 eyebrows total, and you've now seen all of them.</p>
+    <div class="pill-row" role="list">
+      <div class="pill" role="listitem"><span class="k">Rule</span><span class="v">Max 1 eyebrow per 3 sections</span></div>
+      <div class="pill" role="listitem"><span class="k">Detect</span><span class="v">Count <code style="font-family:var(--mono);font-size:11px;">uppercase tracking</code> instances</span></div>
+      <div class="pill" role="listitem"><span class="k">Fail if</span><span class="v">count > ceil(sections / 3)</span></div>
+      <div class="pill" role="listitem"><span class="k">Fix</span><span class="v">Drop it. Headline alone is enough.</span></div>
+      <div class="pill" role="listitem"><span class="k">Why</span><span class="v">Eyebrow on every section is AI grammar</span></div>
+    </div>
+  </section>
+
+  <!-- 07 — Layout diversification (manifesto family) -->
+  <section id="s7" class="slide">
+    <h2>Layout diversification.</h2>
+    <p>Once a layout family appears, it's used at most once on the page. The skill itself enforces this — every slide of this deck uses a different family.</p>
+    <div class="manifesto">
+      <div class="rule"><span class="b"></span><p><strong>Section-layout repetition ban.</strong> A landing page with 8 sections must use at least 4 different families.</p></div>
+      <div class="rule"><span class="b"></span><p><strong>Zigzag cap.</strong> Max 2 consecutive "left-image + right-text" rows. The 3rd is a Pre-Flight Fail.</p></div>
+      <div class="rule"><span class="b"></span><p><strong>Bento cell-count rule.</strong> 3 items → 3 cells. 5 items → 5 cells. Never paste a blank tile.</p></div>
+      <div class="rule"><span class="b"></span><p><strong>Bento background diversity.</strong> At least 2-3 cells in a multi-cell grid need real visual variation: an image, a tint, a pattern.</p></div>
+      <div class="rule"><span class="b"></span><p><strong>Split-header ban.</strong> Left-big-headline + right-floaty-paragraph as a section header — banned by default. Stack vertically instead.</p></div>
+      <div class="rule"><span class="b"></span><p><strong>Marquee max-one-per-page.</strong> Horizontal kinetic strips are fine once. Two reads as lazy filler.</p></div>
+    </div>
+  </section>
+
+  <!-- 08 — Color calibration (palette + ban list family) -->
+  <section id="s8" class="slide">
+    <h2>Color calibration.</h2>
+    <p>One palette per project. One accent. Saturation under 80% by default. Once chosen, it's locked across every section.</p>
+    <div class="palette-row">
+      <div>
+        <div class="swatches" aria-label="Active palette">
+          <div class="sw dark">ink</div>
+          <div class="sw mid">ink-2</div>
+          <div class="sw mut">muted</div>
+          <div class="sw line">line</div>
+          <div class="sw bg">bg</div>
+          <div class="sw surf" style="border-color: var(--line);">surface</div>
+          <div class="sw accent">accent</div>
+          <div class="sw accent2">accent-2</div>
+          <div class="sw soft">soft</div>
+        </div>
+        <p style="margin-top:16px; font-size: 13.5px;">This deck uses the <strong>monochrome + electric blue pop</strong> rotation — one of Section 4.2's named alternatives to the banned beige+brass.</p>
+      </div>
+      <div class="ban-list">
+        <div class="ban-row">
+          <div class="head"><span class="name">The Lila rule</span><span class="x">ban</span></div>
+          <p>The "AI purple / blue glow" aesthetic is the saturated default. No auto button glows. No random neon gradients.</p>
+        </div>
+        <div class="ban-row">
+          <div class="head"><span class="name">Premium-consumer beige+brass</span><span class="x">ban</span></div>
+          <p>The whole cookware/wellness/artisan default palette. Banned unless the brief explicitly names those colors.</p>
+        </div>
+        <div class="ban-row">
+          <div class="head"><span class="name">Section accent fluctuation</span><span class="x">ban</span></div>
+          <p>Warm-grey site doesn't get a blue CTA in section 7. Lock the accent. Audit every component.</p>
+        </div>
+        <div class="ban-row">
+          <div class="head"><span class="name">Theme inversion mid-page</span><span class="x">ban</span></div>
+          <p>Pick light, dark, or auto at page level. No light-cream section sandwiched in a dark layout.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 09 — Image strategy (image grid family) -->
+  <section id="s9" class="slide">
+    <span class="eyebrow">03 of 03 eyebrows used</span>
+    <h2>Image strategy.</h2>
+    <p>Landing pages are visual products. Text-only pages with fake-screenshot divs are slop. Image-gen first, real photography second, TODO placeholder last.</p>
+    <div class="img-grid">
+      <div class="img">
+        <img loading="lazy" src="https://picsum.photos/seed/tasteskill-editorial-1/900/700" alt="Editorial photography sample" />
+        <span class="cap">image-gen first</span>
+      </div>
+      <div class="img tall">
+        <img loading="lazy" src="https://picsum.photos/seed/tasteskill-editorial-2/700/900" alt="Studio still life sample" />
+        <span class="cap">real photography</span>
+      </div>
+      <div class="img tall">
+        <img loading="lazy" src="https://picsum.photos/seed/tasteskill-editorial-3/700/900" alt="Architectural sample" />
+        <span class="cap">labeled TODO last</span>
+      </div>
+    </div>
+    <p style="font-size: 13.5px; color: var(--muted); font-family: var(--mono);">Sources cycled via <code>https://picsum.photos/seed/{descriptive-seed}/{w}/{h}</code></p>
+  </section>
+
+  <!-- 10 — Pre-Flight checklist (checklist family, never seen before in this deck) -->
+  <section id="s10" class="slide">
+    <h2>Pre-Flight checklist.</h2>
+    <p>Mandatory before shipping. Fail any of these and the work is broken, not "almost there."</p>
+    <div class="preflight">
+      <div class="pf"><span class="chk">✓</span><span class="what">Hero fits in 100dvh on a 13" laptop</span><span class="why">layout · hero</span></div>
+      <div class="pf"><span class="chk">✓</span><span class="what">CTA labels fit one line at desktop</span><span class="why">a11y · buttons</span></div>
+      <div class="pf"><span class="chk">✓</span><span class="what">Body text passes WCAG AA contrast (4.5:1)</span><span class="why">a11y · color</span></div>
+      <div class="pf"><span class="chk">✓</span><span class="what">No duplicate-intent CTAs on the page</span><span class="why">copy · cta</span></div>
+      <div class="pf"><span class="chk">✓</span><span class="what">Eyebrow count ≤ ceil(sections / 3)</span><span class="why">layout · eyebrow</span></div>
+      <div class="pf"><span class="chk">✓</span><span class="what">Each layout family used at most once</span><span class="why">layout · sections</span></div>
+      <div class="pf"><span class="chk">✓</span><span class="what">Real images present (no fake-screenshot divs)</span><span class="why">assets · imagery</span></div>
+      <div class="pf"><span class="chk">✓</span><span class="what">One palette, one accent, theme locked</span><span class="why">color · theme</span></div>
+      <div class="pf"><span class="chk">✓</span><span class="what">Motion claimed = motion shown (or dial dropped)</span><span class="why">motion · intent</span></div>
+      <div class="pf"><span class="chk">✓</span><span class="what">Copy self-audit: no AI cute-but-wrong phrases</span><span class="why">copy · audit</span></div>
+    </div>
+  </section>
+
+  <!-- 11 — End -->
+  <section id="s11" class="slide end">
+    <h2>The taste skill, in one sentence.</h2>
+    <p class="lead">Read the brief, infer the design read, set three dials, pick a real system when one fits, and ship landing pages that don't look templated — with mechanical Pre-Flight checks to catch the AI reflex.</p>
+    <div class="stat-row">
+      <div class="stat"><span class="lbl">Scope</span><span class="vv">Landing / portfolio</span></div>
+      <div class="stat"><span class="lbl">Dials</span><span class="vv">3 · 1–10</span></div>
+      <div class="stat"><span class="lbl">Banned defaults</span><span class="vv">22+</span></div>
+      <div class="stat"><span class="lbl">Pre-Flight</span><span class="vv">Mandatory</span></div>
+    </div>
+    <div class="btn-row">
+      <a class="btn primary" href="deck-emil-design-eng.html">Next · emil-design-eng →</a>
+      <a class="btn ghost" href="deck-impeccable.html">← Back · impeccable</a>
+    </div>
+  </section>
+
+</main>
+</body>
+</html>

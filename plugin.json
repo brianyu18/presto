@@ -1,0 +1,26 @@
+{
+  "name": "presto",
+  "version": "0.1.0",
+  "description": "Three design skills (impeccable + design-taste-frontend + emil-design-eng) stacked into one workflow. Run /magic for the full linear flow or break out into individual phases.",
+  "author": { "name": "brian" },
+  "skills": [
+    { "name": "impeccable",             "path": "../../claude-sync/skills/impeccable" },
+    { "name": "design-taste-frontend",  "path": "../../claude-sync/skills/design-taste-frontend" },
+    { "name": "emil-design-eng",        "path": "../../claude-sync/skills/emil-design-eng" },
+    { "name": "houdini",                "path": "skills/houdini/SKILL.md" }
+  ],
+  "commands": [
+    { "name": "magic",         "path": "commands/magic.md", "description": "Full 7-phase design flow end-to-end. On cold-start, confirms whether to run /houdini first. Pass --surprise to bypass all prompts: autonomously runs houdini in wildcard mode, then proceeds through every phase with zero questions." },
+    { "name": "design-read",   "path": "commands/design-read.md" },
+    { "name": "set-dials",     "path": "commands/set-dials.md" },
+    { "name": "design-flow",   "path": "commands/design-flow.md" },
+    { "name": "design-audit",  "path": "commands/design-audit.md" },
+    { "name": "design-review", "path": "commands/design-review.md" },
+    { "name": "houdini",       "path": "commands/houdini.md", "description": "Creative partner for the blank page. Three modes: guided (default), --auto (zero-question solo run), or comma-separated keywords as a Design Read seed." }
+  ],
+  "workflows": [
+    { "name": "magic",   "path": "workflows/magic.js" },
+    { "name": "houdini", "path": "workflows/houdini.js" }
+  ],
+  "memory": "memory/"
+}

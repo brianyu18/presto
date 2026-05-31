@@ -1,0 +1,16 @@
+# Runtime memory and seed artifacts — regenerated per /magic run
+memory/*
+!memory/.gitkeep
+seeds/draft-*.html
+seeds/starter.html
+seeds/tokens.css
+!seeds/.gitkeep
+!seeds/README.md
+
+# macOS
+.DS_Store
+
+# Editor
+.vscode/
+.idea/
+*.swp

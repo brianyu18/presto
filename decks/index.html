@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Design Skills Audit — Index</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&family=Fraunces:opsz,wght@9..144,400;9..144,500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+    --bg:       #f7f6f3;
+    --surface:  #ffffff;
+    --ink:      #14151a;
+    --ink-2:    #2a2b30;
+    --muted:    #6a6c75;
+    --line:     #e7e7e3;
+    --line-2:   #efefe8;
+    --accent:   #b6553a;   /* terracotta — neutral choice between the four decks */
+    --accent-2: #8e3e29;
+
+    --sans:    "Geist", ui-sans-serif, system-ui, sans-serif;
+    --display: "Fraunces", ui-serif, Georgia, serif;
+    --mono:    "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--sans);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: clamp(48px, 6vw, 88px) clamp(24px, 5vw, 64px) 80px;
+  }
+  header.top {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    color: var(--ink);
+    margin-bottom: 56px;
+  }
+  header.top .dot { width: 10px; height: 10px; background: var(--accent); border-radius: 50%; }
+  header.top .sep { color: var(--muted); }
+
+  h1 {
+    font-family: var(--display);
+    font-size: clamp(2.6rem, 6vw, 4.8rem);
+    line-height: 0.98;
+    letter-spacing: -0.035em;
+    font-weight: 500;
+    margin: 0 0 24px;
+    text-wrap: balance;
+  }
+  h1 em { font-style: italic; color: var(--accent); font-weight: 400; }
+  p.lead {
+    font-size: 1.2rem;
+    color: var(--ink-2);
+    max-width: 60ch;
+    text-wrap: pretty;
+    margin: 0 0 48px;
+  }
+
+  .summary {
+    display: grid;
+    gap: 16px;
+    grid-template-columns: 1fr;
+    margin-bottom: 56px;
+  }
+  @media (min-width: 760px) { .summary { grid-template-columns: repeat(3, 1fr); } }
+  .sum {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 20px 22px;
+    display: grid;
+    gap: 8px;
+  }
+  .sum h3 { margin: 0; font-size: 14px; color: var(--ink); font-family: var(--mono); font-weight: 500; letter-spacing: 0.04em; }
+  .sum h3 .pre { color: var(--accent); }
+  .sum p { margin: 0; font-size: 13.5px; color: var(--ink-2); }
+  .sum .l {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .decks {
+    display: grid;
+    gap: 18px;
+  }
+  @media (min-width: 880px) { .decks { grid-template-columns: 1fr 1fr; } }
+
+  .deck-card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 28px;
+    display: grid;
+    gap: 16px;
+    text-decoration: none;
+    color: var(--ink);
+    transition: transform 220ms var(--ease-out), border-color 200ms var(--ease-out);
+  }
+  .deck-card:hover { transform: translateY(-2px); border-color: var(--accent); }
+  .deck-card:active { transform: scale(0.99); transition-duration: 100ms; }
+  .deck-card .head {
+    display: flex; align-items: baseline; justify-content: space-between;
+    gap: 16px;
+    border-bottom: 1px solid var(--line-2);
+    padding-bottom: 16px;
+  }
+  .deck-card .head .n {
+    font-family: var(--display);
+    font-size: 2.6rem;
+    font-weight: 500;
+    color: var(--accent);
+    letter-spacing: -0.04em;
+    line-height: 1;
+  }
+  .deck-card .head .label {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .deck-card h2 {
+    font-family: var(--display);
+    font-size: 1.8rem;
+    letter-spacing: -0.022em;
+    line-height: 1.05;
+    margin: 0;
+    font-weight: 500;
+  }
+  .deck-card p { margin: 0; font-size: 14.5px; color: var(--ink-2); max-width: 50ch; }
+  .deck-card .meta {
+    display: flex; gap: 12px; flex-wrap: wrap;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+  }
+  .deck-card .meta span {
+    padding: 4px 10px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--bg);
+  }
+  .deck-card .arrow {
+    margin-top: 4px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--accent);
+    letter-spacing: 0.04em;
+  }
+
+  footer {
+    margin-top: 64px;
+    padding-top: 28px;
+    border-top: 1px solid var(--line);
+    display: grid;
+    gap: 6px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+  }
+  footer .pulse {
+    display: inline-block;
+    width: 8px; height: 8px;
+    background: var(--accent);
+    border-radius: 50%;
+    margin-right: 8px;
+    vertical-align: middle;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition-duration: 0.001ms !important; animation-duration: 0.001ms !important; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <span class="dot" aria-hidden="true"></span>
+    <span>Design Skills Audit</span>
+    <span class="sep">/</span>
+    <span>Four decks · brian · 2026</span>
+  </header>
+
+  <h1>Three design skills. <em>One</em> workflow.</h1>
+  <p class="lead">Four decks. The first three walk through <strong>impeccable</strong>, <strong>design-taste-frontend</strong>, and <strong>emil-design-eng</strong> — each deck built using the rules of the skill it describes. The fourth shows how they compose into a single workflow and proposes packaging them as a unified plugin.</p>
+
+  <section class="summary" aria-label="Skill summary">
+    <div class="sum">
+      <span class="l">Altitude · Project</span>
+      <h3><span class="pre">01.</span> impeccable</h3>
+      <p>Loads context, picks a register, runs commands across the lifecycle. Owns brand-vs-product and the OKLCH palette strategy.</p>
+    </div>
+    <div class="sum">
+      <span class="l">Altitude · Page</span>
+      <h3><span class="pre">02.</span> design-taste-frontend</h3>
+      <p>Reads the brief, sets VARIANCE / MOTION / DENSITY dials, picks a real design system when one fits, enforces mechanical Pre-Flight checks.</p>
+    </div>
+    <div class="sum">
+      <span class="l">Altitude · Component</span>
+      <h3><span class="pre">03.</span> emil-design-eng</h3>
+      <p>Animation Decision Framework, custom easing, transform-origin awareness, asymmetric enter/exit, the mandatory review table.</p>
+    </div>
+  </section>
+
+  <section class="decks" aria-label="The four decks">
+    <a class="deck-card" href="deck-impeccable.html">
+      <div class="head">
+        <span class="n">01</span>
+        <span class="label">11 slides · ~5 min</span>
+      </div>
+      <h2>Impeccable — production-grade, committed choices.</h2>
+      <p>The 25-command, register-aware design skill. This deck is built on its own rules: OKLCH committed palette, contrast-axis type pair, no eyebrow-per-section, no gradient text, no side-stripe accents.</p>
+      <div class="meta">
+        <span>Register · brand</span>
+        <span>Palette · terracotta</span>
+        <span>Type · Fraunces + Inter Tight</span>
+      </div>
+      <span class="arrow">Open deck →</span>
+    </a>
+
+    <a class="deck-card" href="deck-design-taste-frontend.html">
+      <div class="head">
+        <span class="n">02</span>
+        <span class="label">11 slides · ~5 min</span>
+      </div>
+      <h2>design-taste-frontend — read the room before code.</h2>
+      <p>The taste skill. Stated Design Read up top, dials at 7 / 5 / 4, anti-default discipline (no Inter, no AI-purple, no beige+brass), max 1 eyebrow per 3 sections, no section-layout repetition.</p>
+      <div class="meta">
+        <span>Read · stated</span>
+        <span>Palette · monochrome + cobalt</span>
+        <span>Type · Geist</span>
+      </div>
+      <span class="arrow">Open deck →</span>
+    </a>
+
+    <a class="deck-card" href="deck-emil-design-eng.html">
+      <div class="head">
+        <span class="n">03</span>
+        <span class="label">12 slides · ~6 min</span>
+      </div>
+      <h2>emil-design-eng — invisible details, compounded.</h2>
+      <p>The component-level craft skill. Live demos throughout: spring-physics mouse tracking, scale-on-press buttons, hold-to-delete via clip-path, popovers from origin, scale(0) vs scale(0.95) entrance comparison, mandatory review table.</p>
+      <div class="meta">
+        <span>Custom easing · 3 curves</span>
+        <span>Palette · emerald</span>
+        <span>Type · Inter Tight</span>
+      </div>
+      <span class="arrow">Open deck →</span>
+    </a>
+
+    <a class="deck-card" href="deck-combined.html">
+      <div class="head">
+        <span class="n">04</span>
+        <span class="label">12 slides · ~6 min</span>
+      </div>
+      <h2>Combined — three altitudes, one workflow.</h2>
+      <p>The synthesis. Three-altitude ownership map, unified seven-step flow, conflict-resolution matrix, a worked hero example annotated with skill ownership, and the proposal: package it as <code style="font-family: var(--mono); font-size: 0.9em; background: var(--line-2); padding: 1px 6px; border-radius: 4px;">taste-stack</code>.</p>
+      <div class="meta">
+        <span>Dark editorial</span>
+        <span>Palette · amber on slate</span>
+        <span>Type · Fraunces + Geist</span>
+      </div>
+      <span class="arrow">Open deck →</span>
+    </a>
+  </section>
+
+  <footer>
+    <span><span class="pulse" aria-hidden="true"></span>Generated autonomously per /lead-mode autonomous · /devteam workflow</span>
+    <span>Each deck is a single self-contained HTML file. Open them directly or serve the directory.</span>
+  </footer>
+
+</div>
+</body>
+</html>

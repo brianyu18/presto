@@ -1,0 +1,1035 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Deck 03 — emil-design-eng</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  /* ============================================================
+     Built per emil-design-eng's principles. The deck embodies
+     the philosophy: every button has scale(0.97) on :active,
+     every entry uses scale(0.95)+opacity (never scale(0)),
+     popovers honor transform-origin, asymmetric enter/exit
+     timing, stagger between items, custom easing curves, and
+     reduced-motion always handled.
+     ============================================================ */
+  :root {
+    /* Custom easing curves — stronger than CSS defaults */
+    --ease-out:     cubic-bezier(0.23, 1, 0.32, 1);
+    --ease-in-out:  cubic-bezier(0.77, 0, 0.175, 1);
+    --ease-drawer:  cubic-bezier(0.32, 0.72, 0, 1);
+    --ease-snap:    cubic-bezier(0.22, 1, 0.36, 1);
+
+    /* Palette — refined editorial */
+    --bg:       #fafaf7;
+    --surface:  #ffffff;
+    --ink:      #15161a;
+    --ink-2:    #2c2d33;
+    --muted:    #6c6e76;
+    --line:     #e7e7e3;
+    --line-2:   #f0f0ec;
+    --accent:   #0b8870;       /* muted emerald */
+    --accent-2: #066856;
+    --accent-soft: #e5f3ef;
+    --warn:     #c2410c;
+    --warn-soft:#fbe7d8;
+
+    --sans: "Inter Tight", ui-sans-serif, system-ui, -apple-system, sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+    --r-xs: 6px;
+    --r-sm: 10px;
+    --r-md: 14px;
+    --r-lg: 18px;
+
+    --z-nav: 20;
+    --z-popover: 50;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  main {
+    scroll-snap-type: y mandatory;
+    overflow-y: auto;
+    height: 100vh;
+  }
+  section.slide {
+    scroll-snap-align: start;
+    min-height: 100dvh;
+    padding: clamp(56px, 7vw, 92px) clamp(24px, 6vw, 88px);
+    display: grid;
+    align-content: center;
+    gap: 32px;
+    border-bottom: 1px solid var(--line);
+    position: relative;
+  }
+
+  h1, h2, h3 {
+    color: var(--ink);
+    font-weight: 600;
+    letter-spacing: -0.025em;
+    text-wrap: balance;
+    margin: 0;
+  }
+  h1 { font-size: clamp(2.6rem, 6vw, 4.6rem); line-height: 0.98; letter-spacing: -0.035em; font-weight: 600; }
+  h2 { font-size: clamp(1.8rem, 3.6vw, 2.8rem); line-height: 1.05; }
+  h3 { font-size: 1.05rem; letter-spacing: -0.005em; }
+  p  { max-width: 64ch; color: var(--ink-2); text-wrap: pretty; margin: 0; }
+  p.lead { font-size: 1.2rem; max-width: 58ch; }
+  code { font-family: var(--mono); font-size: 0.92em; background: var(--line-2); padding: 1px 6px; border-radius: 4px; color: var(--ink); }
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 500;
+  }
+
+  /* Top mark + nav */
+  header.mark {
+    position: fixed;
+    top: clamp(20px, 3vw, 30px);
+    left: clamp(24px, 4vw, 48px);
+    z-index: var(--z-nav);
+    display: flex; gap: 10px; align-items: center;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--ink);
+  }
+  header.mark .dot { width: 8px; height: 8px; background: var(--accent); border-radius: 50%; }
+  nav.rail {
+    position: fixed;
+    right: clamp(16px, 2.5vw, 32px);
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: var(--z-nav);
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  nav.rail a {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--line);
+    transition: background 180ms var(--ease-out), transform 180ms var(--ease-out);
+  }
+  nav.rail a:hover { background: var(--ink); transform: scale(1.4); }
+
+  /* ===== Buttons — every button scales to 0.97 on :active ===== */
+  .btn {
+    display: inline-flex; align-items: center; gap: 10px;
+    padding: 11px 18px;
+    border-radius: var(--r-sm);
+    font-family: var(--sans);
+    font-weight: 500;
+    font-size: 14px;
+    letter-spacing: -0.005em;
+    cursor: pointer;
+    border: 1px solid transparent;
+    text-decoration: none;
+    transition:
+      transform 160ms var(--ease-out),
+      background 180ms var(--ease-out),
+      box-shadow 200ms var(--ease-out);
+    white-space: nowrap;
+  }
+  .btn:hover { transform: translateY(-1px); }
+  .btn:active { transform: scale(0.97); transition-duration: 100ms; }
+  .btn.primary { background: var(--ink); color: #fff; box-shadow: 0 1px 0 rgba(255,255,255,0.06) inset, 0 1px 2px rgba(0,0,0,0.05); }
+  .btn.primary:hover { background: #000; }
+  .btn.ghost   { background: transparent; color: var(--ink); border-color: var(--line); }
+  .btn.ghost:hover { background: var(--surface); }
+  .btn.accent  { background: var(--accent); color: #fff; }
+  .btn.accent:hover { background: var(--accent-2); }
+  .btn-row { display: flex; gap: 12px; flex-wrap: wrap; }
+
+  /* ===== Slide 01 — Cover ===== */
+  .cover { display: grid; align-content: center; gap: 28px; }
+  .cover .stack { max-width: 920px; display: grid; gap: 24px; }
+  .cover h1 em { font-style: italic; color: var(--accent); font-weight: 500; }
+  .cover .quote {
+    border-left: none;
+    padding: 22px 26px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    max-width: 60ch;
+    font-size: 16px;
+    color: var(--ink-2);
+    font-style: italic;
+  }
+  .cover .quote cite {
+    display: block;
+    margin-top: 10px;
+    font-style: normal;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+  }
+
+  /* ===== Slide 02 — Animation decision framework (flow with subtle stagger reveal) ===== */
+  .framework {
+    display: grid;
+    gap: 12px;
+    max-width: 880px;
+  }
+  .step {
+    display: grid;
+    grid-template-columns: 36px 1fr;
+    gap: 20px;
+    padding: 22px 24px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    opacity: 0;
+    transform: scale(0.97) translateY(6px);
+    transition:
+      opacity 500ms var(--ease-out),
+      transform 500ms var(--ease-out);
+  }
+  .step.in {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+  .step .n {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: var(--ink);
+    color: #fff;
+    display: grid; place-items: center;
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 500;
+  }
+  .step h4 { margin: 0 0 6px; font-size: 15px; color: var(--ink); font-weight: 600; }
+  .step p  { font-size: 14px; margin: 0; }
+
+  /* ===== Slide 03 — Easing curves (visual curves + interactive sample) ===== */
+  .ease-grid {
+    display: grid;
+    gap: 18px;
+  }
+  @media (min-width: 880px) { .ease-grid { grid-template-columns: repeat(2, 1fr); } }
+  .ease-card {
+    border: 1px solid var(--line);
+    background: var(--surface);
+    border-radius: var(--r-md);
+    padding: 24px;
+    display: grid;
+    gap: 14px;
+  }
+  .ease-card .name {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+  }
+  .ease-card .formula {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--ink);
+    background: var(--line-2);
+    padding: 8px 12px;
+    border-radius: 6px;
+    width: fit-content;
+  }
+  .ease-card svg { width: 100%; height: 80px; }
+  .ease-card svg path { stroke: var(--accent); stroke-width: 2; fill: none; }
+  .ease-card svg .baseline { stroke: var(--line); stroke-width: 1; }
+  .ease-card .demo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .ease-card .puck {
+    width: 14px; height: 14px;
+    border-radius: 4px;
+    background: var(--ink);
+    transition: transform 600ms var(--ease-out);
+  }
+  .ease-card.ease-in-out .puck { transition-timing-function: var(--ease-in-out); }
+  .ease-card .track {
+    flex: 1;
+    height: 1px;
+    background: var(--line);
+    position: relative;
+  }
+  .ease-card .run:hover ~ .demo .puck,
+  .ease-card:hover .puck { transform: translateX(220px); }
+
+  /* ===== Slide 04 — Speed table ===== */
+  table.spd {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    overflow: hidden;
+  }
+  table.spd th, table.spd td {
+    text-align: left;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--line-2);
+    font-size: 14px;
+    color: var(--ink-2);
+  }
+  table.spd th {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    background: var(--bg);
+  }
+  table.spd td:first-child { color: var(--ink); font-weight: 500; }
+  table.spd td.dur { font-family: var(--mono); color: var(--accent); }
+  table.spd tr:last-child td { border-bottom: 0; }
+
+  /* ===== Slide 05 — Spring physics (interactive: mouse-tracking) ===== */
+  .spring-stage {
+    height: 320px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    position: relative;
+    overflow: hidden;
+    cursor: crosshair;
+  }
+  .spring-stage .ball {
+    position: absolute;
+    width: 56px; height: 56px;
+    border-radius: 50%;
+    background: var(--accent);
+    top: 50%; left: 50%;
+    margin: -28px 0 0 -28px;
+    box-shadow:
+      0 12px 30px -8px rgba(11,136,112,0.35),
+      0 0 0 6px rgba(11,136,112,0.08);
+    will-change: transform;
+    /* Spring-like easing */
+    transition: transform 700ms cubic-bezier(0.34, 1.36, 0.64, 1);
+  }
+  .spring-stage .ball.no-spring {
+    transition: transform 50ms linear;
+  }
+  .spring-stage .hint {
+    position: absolute;
+    bottom: 14px; left: 16px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+  }
+  .toggle {
+    display: inline-flex;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 4px;
+    background: var(--surface);
+    width: fit-content;
+  }
+  .toggle button {
+    padding: 6px 14px;
+    border-radius: 999px;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+    font-family: var(--sans);
+    font-size: 13px;
+    color: var(--muted);
+    font-weight: 500;
+    transition: background 180ms var(--ease-out), color 180ms var(--ease-out);
+  }
+  .toggle button.on { background: var(--ink); color: #fff; }
+
+  /* ===== Slide 06 — Buttons: instant feedback ===== */
+  .btn-demo-grid {
+    display: grid;
+    gap: 18px;
+    grid-template-columns: 1fr;
+  }
+  @media (min-width: 760px) { .btn-demo-grid { grid-template-columns: 1.1fr 0.9fr; } }
+  .btn-stage {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    padding: 36px 32px;
+    display: grid;
+    gap: 18px;
+    place-content: center;
+    text-align: center;
+  }
+  .btn-stage .big {
+    --pad: 18px 32px;
+    padding: var(--pad);
+    border-radius: 12px;
+    background: var(--ink);
+    color: #fff;
+    font-family: var(--sans);
+    font-weight: 500;
+    font-size: 15px;
+    border: 0;
+    cursor: pointer;
+    transition: transform 160ms var(--ease-out);
+    box-shadow: 0 8px 16px -6px rgba(21,22,26,0.25);
+  }
+  .btn-stage .big:active { transform: scale(0.97); }
+  .btn-stage .label {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .btn-meta {
+    border: 1px solid var(--line);
+    background: var(--surface);
+    border-radius: var(--r-md);
+    padding: 22px;
+    display: grid;
+    gap: 10px;
+  }
+  .btn-meta p { font-size: 14px; }
+  .btn-meta code { background: var(--line-2); }
+
+  /* ===== Slide 07 — Never scale(0) (live before/after) ===== */
+  .scale-row {
+    display: grid;
+    gap: 18px;
+  }
+  @media (min-width: 800px) { .scale-row { grid-template-columns: 1fr 1fr; } }
+  .scale-card {
+    border: 1px solid var(--line);
+    background: var(--surface);
+    border-radius: var(--r-md);
+    padding: 28px;
+    display: grid;
+    gap: 16px;
+    place-content: start center;
+    text-align: center;
+    min-height: 320px;
+  }
+  .scale-card h4 { margin: 0; font-size: 15px; }
+  .scale-card .tag {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    width: fit-content;
+    margin: 0 auto;
+    padding: 4px 10px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+  }
+  .scale-card.bad .tag { color: var(--warn); border-color: var(--warn); background: var(--warn-soft); }
+  .scale-card.good .tag { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); }
+  .balloon {
+    width: 120px; height: 120px;
+    border-radius: 24px;
+    background: var(--ink);
+    margin: 0 auto;
+    color: #fff;
+    display: grid; place-items: center;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.05em;
+    opacity: 0;
+    transform: scale(0);
+  }
+  .scale-card.good .balloon { transform: scale(0.95); opacity: 0; }
+  .scale-card .replay { margin-top: auto; }
+  .scale-card .replay .btn { padding: 7px 12px; font-size: 12px; }
+  .balloon.go { transition: transform 380ms var(--ease-out), opacity 380ms var(--ease-out); transform: scale(1); opacity: 1; }
+  .scale-card.bad .balloon { transform-origin: center; }
+  .scale-card.good .balloon { transform-origin: center; }
+  .scale-card p { font-size: 13.5px; color: var(--ink-2); max-width: 32ch; margin: 0 auto; }
+
+  /* ===== Slide 08 — Popover origin (3 buttons, popovers from trigger) ===== */
+  .popover-row {
+    display: grid;
+    gap: 20px;
+    grid-template-columns: 1fr;
+    align-items: start;
+  }
+  @media (min-width: 880px) { .popover-row { grid-template-columns: 1fr 1fr; } }
+  .popover-stage {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    padding: 40px 32px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    min-height: 280px;
+  }
+  .pop-host {
+    position: relative;
+    display: inline-block;
+  }
+  .pop {
+    position: absolute;
+    top: calc(100% + 10px);
+    left: 50%;
+    width: 220px;
+    padding: 14px 16px;
+    background: var(--ink);
+    color: #fff;
+    border-radius: 10px;
+    font-size: 13px;
+    text-align: left;
+    pointer-events: none;
+    opacity: 0;
+    transform: translateX(-50%) scale(0.95);
+    transform-origin: 50% 0;          /* anchored at trigger */
+    transition: opacity 180ms var(--ease-out), transform 180ms var(--ease-out);
+    z-index: var(--z-popover);
+  }
+  .pop::before {
+    content: "";
+    position: absolute;
+    top: -6px; left: 50%;
+    width: 12px; height: 12px;
+    background: var(--ink);
+    transform: translateX(-50%) rotate(45deg);
+  }
+  .pop-host.open .pop {
+    opacity: 1;
+    transform: translateX(-50%) scale(1);
+  }
+  .pop-host.bad .pop { transform-origin: 50% 100%; top: -56px; }
+  .pop-host.bad .pop::before { top: auto; bottom: -6px; }
+  .pop-label { font-size: 12.5px; color: var(--muted); margin-top: 4px; font-family: var(--mono); }
+
+  /* ===== Slide 09 — clip-path: hold to delete ===== */
+  .hold-grid {
+    display: grid;
+    gap: 20px;
+    grid-template-columns: 1fr;
+  }
+  @media (min-width: 880px) { .hold-grid { grid-template-columns: 1fr 1fr; } }
+  .hold-stage {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    padding: 40px 32px;
+    display: grid;
+    place-content: center;
+    gap: 18px;
+    text-align: center;
+    min-height: 260px;
+  }
+  .hold-btn {
+    position: relative;
+    overflow: hidden;
+    background: var(--surface);
+    color: var(--warn);
+    border: 1px solid var(--warn);
+    border-radius: 12px;
+    padding: 14px 28px;
+    font-family: var(--sans);
+    font-weight: 500;
+    font-size: 15px;
+    cursor: pointer;
+    transition: transform 160ms var(--ease-out);
+    user-select: none;
+  }
+  .hold-btn:active { transform: scale(0.97); }
+  .hold-btn .label { position: relative; z-index: 2; }
+  .hold-btn .fill {
+    position: absolute;
+    inset: 0;
+    background: var(--warn);
+    clip-path: inset(0 100% 0 0);
+    transition: clip-path 250ms var(--ease-out);
+    z-index: 1;
+  }
+  .hold-btn.holding .fill { clip-path: inset(0 0 0 0); transition: clip-path 1800ms linear; }
+  .hold-btn.holding .label { color: #fff; }
+  .hold-btn .label { transition: color 250ms var(--ease-out); }
+  .hold-note {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+  }
+
+  /* ===== Stagger demo (slide 02 reuse pattern, also used as visual) ===== */
+  .stagger-list {
+    display: grid;
+    gap: 8px;
+  }
+  .stagger-list li {
+    list-style: none;
+    padding: 12px 16px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--r-sm);
+    font-size: 14px;
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity 380ms var(--ease-out), transform 380ms var(--ease-out);
+  }
+  .stagger-list.in li { opacity: 1; transform: translateY(0); }
+  .stagger-list.in li:nth-child(1) { transition-delay: 0ms; }
+  .stagger-list.in li:nth-child(2) { transition-delay: 60ms; }
+  .stagger-list.in li:nth-child(3) { transition-delay: 120ms; }
+  .stagger-list.in li:nth-child(4) { transition-delay: 180ms; }
+
+  /* ===== Slide 10 — Sonner principles (numbered, small numbers but earned: this is a sequence) ===== */
+  .sonner {
+    display: grid;
+    gap: 12px;
+    counter-reset: son;
+  }
+  .son {
+    display: grid;
+    grid-template-columns: 38px 1fr;
+    gap: 18px;
+    align-items: start;
+    padding: 18px 22px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+  }
+  .son::before {
+    counter-increment: son;
+    content: counter(son, decimal-leading-zero);
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--accent);
+    letter-spacing: 0.05em;
+  }
+  .son h4 { margin: 0 0 4px; font-size: 14.5px; color: var(--ink); font-weight: 600; }
+  .son p { font-size: 13.5px; margin: 0; }
+
+  /* ===== Slide 11 — Review table (mandatory format) ===== */
+  table.review {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    overflow: hidden;
+  }
+  table.review th, table.review td {
+    text-align: left;
+    padding: 13px 16px;
+    border-bottom: 1px solid var(--line-2);
+    font-size: 13.5px;
+    vertical-align: top;
+  }
+  table.review th {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    background: var(--bg);
+  }
+  table.review td.b { color: var(--warn); font-family: var(--mono); font-size: 12.5px; }
+  table.review td.a { color: var(--accent); font-family: var(--mono); font-size: 12.5px; }
+  table.review td.w { color: var(--ink-2); }
+  table.review tr:last-child td { border-bottom: 0; }
+
+  /* ===== End ===== */
+  .end {
+    background: var(--ink);
+    color: #fff;
+  }
+  .end h2 { color: #fff; }
+  .end p  { color: rgba(255,255,255,0.74); }
+  .end .eyebrow { color: rgba(255,255,255,0.55); }
+  .end .btn.primary { background: var(--accent); }
+  .end .btn.primary:hover { background: var(--accent-2); }
+  .end .btn.ghost { color: #fff; border-color: rgba(255,255,255,0.2); }
+  .end .stat-row {
+    display: grid; gap: 0;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: var(--r-md);
+    overflow: hidden;
+  }
+  .end .stat {
+    padding: 22px;
+    background: rgba(255,255,255,0.03);
+    border-right: 1px solid rgba(255,255,255,0.1);
+    display: grid; gap: 4px;
+  }
+  .end .stat:last-child { border-right: 0; }
+  .end .stat .lbl { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(255,255,255,0.55); }
+  .end .stat .vv { font-size: 1.6rem; font-weight: 600; color: #fff; letter-spacing: -0.025em; }
+
+  /* prefers-reduced-motion */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.001ms !important;
+      transition-duration: 0.001ms !important;
+      transition-delay: 0ms !important;
+    }
+  }
+</style>
+</head>
+<body>
+
+<header class="mark">
+  <span class="dot" aria-hidden="true"></span>
+  <span>Deck 03</span>
+  <span style="color: var(--muted);">/</span>
+  <span>emil-design-eng</span>
+</header>
+
+<nav class="rail" aria-label="Slides">
+  <a href="#s1"></a><a href="#s2"></a><a href="#s3"></a><a href="#s4"></a>
+  <a href="#s5"></a><a href="#s6"></a><a href="#s7"></a><a href="#s8"></a>
+  <a href="#s9"></a><a href="#s10"></a><a href="#s11"></a><a href="#s12"></a>
+</nav>
+
+<main>
+
+  <!-- 01 — Cover -->
+  <section id="s1" class="slide cover">
+    <span class="eyebrow">Skill no. 03 · Design engineering</span>
+    <div class="stack">
+      <h1>In a world where everything is good enough,<br><em>taste</em> is the differentiator.</h1>
+      <p class="lead">Emil Kowalski's design-engineering philosophy. The aggregate of unseen details produces interfaces people love without knowing why. Every decision below exists because that aggregate is the whole game.</p>
+      <div class="quote">
+        "All those unseen details combine to produce something that's just stunning, like a thousand barely audible voices all singing in tune."
+        <cite>Paul Graham</cite>
+      </div>
+      <div class="btn-row">
+        <a class="btn primary" href="#s2">Read the framework</a>
+        <a class="btn ghost" href="index.html">All decks</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- 02 — Animation decision framework (stagger reveals on view) -->
+  <section id="s2" class="slide" data-reveal>
+    <h2>The animation decision framework.</h2>
+    <p class="lead">Before writing any animation code, walk these four questions in order. Every animation must answer every question.</p>
+    <div class="framework">
+      <div class="step"><div class="n">1</div><div><h4>Should this animate at all?</h4><p>How often will users see it? Keyboard-initiated actions (100+/day) never animate. Raycast has no open/close animation — that's the optimal experience.</p></div></div>
+      <div class="step"><div class="n">2</div><div><h4>What is the purpose?</h4><p>Spatial consistency · state indication · explanation · feedback · preventing jarring changes. "Looks cool" is not a purpose when the user will see it daily.</p></div></div>
+      <div class="step"><div class="n">3</div><div><h4>What easing should it use?</h4><p>Entering / exiting → <code>ease-out</code>. Moving on screen → <code>ease-in-out</code>. Hover → <code>ease</code>. Constant motion → <code>linear</code>. <strong>Never <code>ease-in</code></strong> on UI.</p></div></div>
+      <div class="step"><div class="n">4</div><div><h4>How fast should it be?</h4><p>Under 300ms is the rule for UI. 180ms dropdown feels more responsive than 400ms. Easing amplifies this — <code>ease-out</code> at 200ms <em>feels</em> faster than <code>ease-in</code> at 200ms.</p></div></div>
+    </div>
+  </section>
+
+  <!-- 03 — Custom easing curves -->
+  <section id="s3" class="slide">
+    <h2>Custom easing. Built-in curves are too weak.</h2>
+    <p>The CSS defaults lack the punch that makes animations feel intentional. Use stronger custom variants. The shaped curves below are the same ones Emil ships.</p>
+    <div class="ease-grid">
+      <div class="ease-card ease-out">
+        <span class="name">ease-out · for UI interactions</span>
+        <span class="formula">cubic-bezier(0.23, 1, 0.32, 1)</span>
+        <svg viewBox="0 0 200 80" aria-hidden="true">
+          <line class="baseline" x1="0" y1="70" x2="200" y2="70" />
+          <path d="M0,70 C46,70 64,10 200,10" />
+        </svg>
+        <div class="demo">
+          <div class="track"></div>
+          <div class="puck" aria-hidden="true"></div>
+        </div>
+        <p style="font-size: 13.5px;">Hover this card to watch the puck. Starts fast, settles smoothly. Feels responsive.</p>
+      </div>
+      <div class="ease-card ease-in-out">
+        <span class="name">ease-in-out · for on-screen movement</span>
+        <span class="formula">cubic-bezier(0.77, 0, 0.175, 1)</span>
+        <svg viewBox="0 0 200 80" aria-hidden="true">
+          <line class="baseline" x1="0" y1="70" x2="200" y2="70" />
+          <path d="M0,70 C150,70 50,10 200,10" />
+        </svg>
+        <div class="demo">
+          <div class="track"></div>
+          <div class="puck" aria-hidden="true"></div>
+        </div>
+        <p style="font-size: 13.5px;">Natural acceleration and deceleration. For things that move <em>across</em>.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 04 — Speed table -->
+  <section id="s4" class="slide">
+    <h2>How fast.</h2>
+    <p>UI animations stay under 300ms. The element decides the range. Anything longer reads as sluggish — even when the timing is "technically" within reason.</p>
+    <table class="spd" aria-label="Animation duration guidance">
+      <thead><tr><th>Element</th><th>Duration</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td>Button press feedback</td><td class="dur">100–160ms</td><td>Instant by feel.</td></tr>
+        <tr><td>Tooltips, small popovers</td><td class="dur">125–200ms</td><td>Skip animation on subsequent tooltips.</td></tr>
+        <tr><td>Dropdowns, selects</td><td class="dur">150–250ms</td><td>180ms feels faster than 400ms.</td></tr>
+        <tr><td>Modals, drawers</td><td class="dur">200–500ms</td><td>The widest range — modals can earn the time.</td></tr>
+        <tr><td>Marketing / explanatory</td><td class="dur">Longer OK</td><td>One-time experiences. Use the room.</td></tr>
+        <tr><td>Keyboard-initiated actions</td><td class="dur">0ms</td><td>Never. Repeated hundreds of times daily.</td></tr>
+      </tbody>
+    </table>
+    <p style="font-size: 13.5px;">A fast-spinning spinner makes loading feel faster, identical load time. Perceived performance is a real lever.</p>
+  </section>
+
+  <!-- 05 — Spring physics -->
+  <section id="s5" class="slide">
+    <h2>Spring physics for things that should feel alive.</h2>
+    <p>Springs simulate real-world physics. They don't have fixed durations — they settle. Use them for drag with momentum, elements that should feel "alive," and gestures users might change mid-motion.</p>
+    <div class="spring-stage" id="spring">
+      <div class="ball" id="springBall" aria-hidden="true"></div>
+      <span class="hint">Move your cursor across the stage.</span>
+    </div>
+    <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+      <div class="toggle" role="tablist">
+        <button class="on" id="springOn" type="button">spring</button>
+        <button id="springOff" type="button">instant</button>
+      </div>
+      <p style="font-size: 13.5px; margin: 0;">Instant tying to mouse position lacks motion. Spring interpolation feels natural and is interruptible mid-flight.</p>
+    </div>
+  </section>
+
+  <!-- 06 — Buttons must feel responsive -->
+  <section id="s6" class="slide">
+    <h2>Buttons must feel responsive.</h2>
+    <p>Add <code>transform: scale(0.97)</code> on <code>:active</code>. Subtle, but instant feedback makes the UI feel like it's <em>listening</em>. Try pressing the one below.</p>
+    <div class="btn-demo-grid">
+      <div class="btn-stage">
+        <button class="big" type="button">Press me</button>
+        <span class="label">cubic-bezier(0.23, 1, 0.32, 1) · 160ms</span>
+      </div>
+      <div class="btn-meta">
+        <h3>Why it compounds</h3>
+        <p>Whether the user notices individually doesn't matter. In the aggregate, unseen details become visible.</p>
+        <p>Pair with <code>filter: blur(2px)</code> during state transitions when crossfades feel off — blur masks the visual overlap of two states.</p>
+        <p>Asymmetric timing: slow on press (deliberate), fast on release (responsive). Press 2s linear, release 200ms ease-out.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 07 — Never animate from scale(0) -->
+  <section id="s7" class="slide">
+    <h2>Never animate from <code>scale(0)</code>.</h2>
+    <p>Nothing in the real world appears from nothing. Start at <code>scale(0.95)</code> with <code>opacity: 0</code>. Even barely-visible initial scale makes the entrance feel natural — like a deflated balloon has shape before it's filled.</p>
+    <div class="scale-row">
+      <div class="scale-card bad">
+        <span class="tag">Avoid</span>
+        <h4>scale(0) → scale(1)</h4>
+        <div class="balloon" data-balloon>Balloon</div>
+        <p>Pops out of nothing. The eye reads it as <em>appearing</em>, not entering.</p>
+        <div class="replay"><button class="btn ghost" type="button" data-replay>Replay</button></div>
+      </div>
+      <div class="scale-card good">
+        <span class="tag">Reach for</span>
+        <h4>scale(0.95) + opacity 0 → scale(1) + opacity 1</h4>
+        <div class="balloon" data-balloon>Balloon</div>
+        <p>Has shape before it arrives. Reads as <em>materializing</em>, not appearing.</p>
+        <div class="replay"><button class="btn ghost" type="button" data-replay>Replay</button></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 08 — Popover origin -->
+  <section id="s8" class="slide">
+    <h2>Popovers scale from their trigger.</h2>
+    <p>The default <code>transform-origin: center</code> is wrong for almost every popover. They should appear to grow <em>from the thing that opened them</em>. Modals are the exception — they stay centered.</p>
+    <div class="popover-row">
+      <div class="popover-stage">
+        <span class="eyebrow">From trigger · correct</span>
+        <div class="pop-host" id="popGood">
+          <button class="btn primary" type="button">Open popover</button>
+          <div class="pop" role="dialog">
+            Anchored to the trigger. Scales from the top edge.
+          </div>
+        </div>
+        <p class="pop-label">transform-origin: 50% 0</p>
+      </div>
+      <div class="popover-stage">
+        <span class="eyebrow">From center · wrong</span>
+        <div class="pop-host bad" id="popBad">
+          <button class="btn ghost" type="button">Open popover</button>
+          <div class="pop" role="dialog">
+            Floats out of the middle of itself. Disconnected.
+          </div>
+        </div>
+        <p class="pop-label">transform-origin: 50% 100%</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 09 — Hold to delete (clip-path) -->
+  <section id="s9" class="slide">
+    <h2>clip-path makes the impossible easy.</h2>
+    <p>Hold-to-delete · image reveal on scroll · perfect tab color transitions · comparison sliders. All one CSS property, all hardware-accelerated. Try holding the button below for a full second.</p>
+    <div class="hold-grid">
+      <div class="hold-stage">
+        <button class="hold-btn" type="button" id="holdBtn">
+          <span class="fill" aria-hidden="true"></span>
+          <span class="label">Hold to delete</span>
+        </button>
+        <span class="hold-note">press: 1.8s linear · release: 250ms ease-out</span>
+      </div>
+      <div class="btn-meta">
+        <h3>Asymmetric timing in two seconds</h3>
+        <p>The press uses linear timing over a long duration — the user is deciding, the interface acknowledges. The release uses ease-out over 250ms — the system is responding, fast as possible.</p>
+        <p>Same pattern: slow where the user is deciding, fast where the system is responding. Drag-to-dismiss, hold-to-confirm, expand-to-fullscreen all follow it.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 10 — Sonner principles -->
+  <section id="s10" class="slide">
+    <h2>The Sonner principles.</h2>
+    <p>Six lessons from building a component shipped 13M+ times a week. They apply to any UI component, not just toasts.</p>
+    <div class="sonner">
+      <div class="son"><div><h4>Developer experience is key</h4><p>No hooks, no context, no setup. Insert once, call from anywhere. Less friction → more adoption.</p></div></div>
+      <div class="son"><div><h4>Good defaults beat options</h4><p>Most users never customize. The default easing, timing, and visual must be excellent.</p></div></div>
+      <div class="son"><div><h4>Naming creates identity</h4><p>"Sonner" (French: to ring) is more memorable than "react-toast." Sacrifice discoverability when warranted.</p></div></div>
+      <div class="son"><div><h4>Handle edge cases invisibly</h4><p>Pause timers when the tab is hidden. Fill gaps between stacked toasts. Users never notice — exactly right.</p></div></div>
+      <div class="son"><div><h4>Transitions, not keyframes</h4><p>Toasts add rapidly. Keyframes restart from zero on interruption. Transitions retarget smoothly.</p></div></div>
+      <div class="son"><div><h4>Cohesion matters</h4><p>Easing and duration fit the vibe. Animation style matches the name. Match motion to mood.</p></div></div>
+    </div>
+  </section>
+
+  <!-- 11 — Review table (mandatory format) -->
+  <section id="s11" class="slide">
+    <span class="eyebrow">Review · mandatory table format</span>
+    <h2>The review checklist.</h2>
+    <p>When the skill reviews UI code, it produces a markdown table with Before · After · Why columns. One row per issue. Never a bullet list.</p>
+    <table class="review">
+      <thead><tr><th>Before</th><th>After</th><th>Why</th></tr></thead>
+      <tbody>
+        <tr><td class="b">transition: all 300ms</td><td class="a">transition: transform 200ms ease-out</td><td class="w">Specify exact properties; <code>all</code> animates surprise.</td></tr>
+        <tr><td class="b">transform: scale(0)</td><td class="a">transform: scale(0.95); opacity: 0</td><td class="w">Nothing real appears from nothing.</td></tr>
+        <tr><td class="b">ease-in on dropdown</td><td class="a">ease-out custom curve</td><td class="w"><code>ease-in</code> feels sluggish — delays the moment the user is watching.</td></tr>
+        <tr><td class="b">no :active state</td><td class="a">transform: scale(0.97) on :active</td><td class="w">Buttons must feel responsive to press.</td></tr>
+        <tr><td class="b">transform-origin: center (popover)</td><td class="a">--radix-popover-content-transform-origin</td><td class="w">Popovers scale from trigger. Modals are exempt.</td></tr>
+        <tr><td class="b">framer-motion x / y under load</td><td class="a">transform: "translateX(100px)"</td><td class="w">Shorthand isn't hardware-accelerated — drops frames during page loads.</td></tr>
+        <tr><td class="b">same enter/exit duration</td><td class="a">slow press, fast release</td><td class="w">Asymmetric timing matches the perception.</td></tr>
+        <tr><td class="b">items appear all at once</td><td class="a">stagger 50-80ms between items</td><td class="w">Cascading entry feels natural; bulk entry feels jarring.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 12 — End -->
+  <section id="s12" class="slide end">
+    <h2>The taste skill, in one sentence.</h2>
+    <p class="lead">A component-level craft skill: every animation answered against four questions, custom easing curves, scale-on-press feedback, transform-origin awareness, asymmetric timing, and a mandatory review table that makes the polish defensible.</p>
+    <div class="stat-row">
+      <div class="stat"><span class="lbl">Scope</span><span class="vv">Component · Motion</span></div>
+      <div class="stat"><span class="lbl">Easing presets</span><span class="vv">3 curves</span></div>
+      <div class="stat"><span class="lbl">Cap</span><span class="vv">≤300ms UI</span></div>
+      <div class="stat"><span class="lbl">Review format</span><span class="vv">Table required</span></div>
+    </div>
+    <div class="btn-row">
+      <a class="btn primary" href="deck-combined.html">Next · combined →</a>
+      <a class="btn ghost" href="deck-design-taste-frontend.html">← Back · taste skill</a>
+    </div>
+  </section>
+
+</main>
+
+<script>
+  // ===== Stagger reveal on intersection =====
+  const revealRoots = document.querySelectorAll('[data-reveal]');
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        const steps = e.target.querySelectorAll('.step');
+        steps.forEach((step, i) => {
+          setTimeout(() => step.classList.add('in'), i * 70);
+        });
+      }
+    });
+  }, { threshold: 0.18 });
+  revealRoots.forEach(r => io.observe(r));
+
+  // ===== Spring stage =====
+  const stage = document.getElementById('spring');
+  const ball  = document.getElementById('springBall');
+  const onBtn = document.getElementById('springOn');
+  const offBtn= document.getElementById('springOff');
+  let spring = true;
+  onBtn.addEventListener('click', () => { spring = true;  onBtn.classList.add('on'); offBtn.classList.remove('on'); ball.classList.remove('no-spring'); });
+  offBtn.addEventListener('click', () => { spring = false; offBtn.classList.add('on'); onBtn.classList.remove('on'); ball.classList.add('no-spring'); });
+  stage.addEventListener('pointermove', (e) => {
+    const r = stage.getBoundingClientRect();
+    const x = e.clientX - r.left - r.width / 2;
+    const y = e.clientY - r.top  - r.height / 2;
+    ball.style.transform = `translate(${x * 0.7}px, ${y * 0.7}px)`;
+  });
+  stage.addEventListener('pointerleave', () => {
+    ball.style.transform = `translate(0, 0)`;
+  });
+
+  // ===== Scale balloon replays =====
+  document.querySelectorAll('[data-replay]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const card = btn.closest('.scale-card');
+      const b = card.querySelector('[data-balloon]');
+      b.classList.remove('go');
+      // Force reflow so transition restarts
+      void b.offsetWidth;
+      b.classList.add('go');
+    });
+  });
+  // Auto-play once on first view
+  const sb = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.querySelectorAll('[data-balloon]').forEach(b => {
+          setTimeout(() => b.classList.add('go'), 120);
+        });
+        sb.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.4 });
+  document.querySelectorAll('.scale-row').forEach(r => sb.observe(r));
+
+  // ===== Popovers =====
+  const togglePop = (id) => {
+    const host = document.getElementById(id);
+    const trigger = host.querySelector('button');
+    trigger.addEventListener('click', () => host.classList.toggle('open'));
+    document.addEventListener('click', (e) => {
+      if (!host.contains(e.target)) host.classList.remove('open');
+    });
+  };
+  togglePop('popGood');
+  togglePop('popBad');
+
+  // ===== Hold to delete =====
+  const hold = document.getElementById('holdBtn');
+  let holdTimer = null;
+  const start = () => {
+    hold.classList.add('holding');
+    holdTimer = setTimeout(() => {
+      hold.classList.remove('holding');
+      hold.animate(
+        [{ transform: 'scale(1)' }, { transform: 'scale(0.7)', opacity: 0.2 }, { transform: 'scale(1)', opacity: 1 }],
+        { duration: 600, easing: 'cubic-bezier(0.23, 1, 0.32, 1)' }
+      );
+    }, 1800);
+  };
+  const cancel = () => {
+    hold.classList.remove('holding');
+    clearTimeout(holdTimer);
+  };
+  hold.addEventListener('pointerdown', start);
+  hold.addEventListener('pointerup', cancel);
+  hold.addEventListener('pointerleave', cancel);
+  hold.addEventListener('pointercancel', cancel);
+</script>
+
+</body>
+</html>

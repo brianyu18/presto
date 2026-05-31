@@ -1,0 +1,1384 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Deck 04 — Combined Approach</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&family=Fraunces:opsz,wght@9..144,400;9..144,500&display=swap" rel="stylesheet">
+<style>
+  /* ============================================================
+     Built using all three skills in unison.
+
+     Scene sentence (impeccable): "A design engineer late at night,
+     reviewing the unified workflow on their laptop with a terminal
+     window adjacent — focused, technical, refined." → dark.
+
+     Design Read (taste skill): "Reading this as: workflow manifesto
+     for design engineers, with an editorial-technical language,
+     leaning toward dark mode + sans display + restrained motion."
+
+     Dials: VARIANCE 6 · MOTION 5 · DENSITY 5
+
+     Register (impeccable): brand — this deck IS the product.
+     Strategy: committed (one saturated amber carries ~35% of the
+     surface in accents).
+
+     Micro-interactions (emil): scale(0.97) on :active for every
+     button, custom easing curves, transform-origin honored,
+     entries from scale(0.95), reduced-motion respected.
+     ============================================================ */
+  :root {
+    /* Custom easing — from emil */
+    --ease-out:    cubic-bezier(0.23, 1, 0.32, 1);
+    --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+    --ease-snap:   cubic-bezier(0.22, 1, 0.36, 1);
+
+    /* Dark editorial palette (OKLCH per impeccable) */
+    --bg:         oklch(0.18 0.012 250);
+    --surface:    oklch(0.22 0.014 250);
+    --surface-2:  oklch(0.26 0.014 250);
+    --ink:        oklch(0.96 0.008 80);
+    --ink-2:      oklch(0.82 0.012 80);
+    --muted:      oklch(0.6  0.012 240);
+    --line:       oklch(0.32 0.012 250);
+    --line-2:     oklch(0.28 0.012 250);
+    --accent:     oklch(0.78 0.16 70);     /* warm amber */
+    --accent-2:   oklch(0.68 0.16 60);
+    --accent-soft:oklch(0.36 0.06 65);
+
+    --sans:    "Geist", ui-sans-serif, system-ui, sans-serif;
+    --display: "Fraunces", ui-serif, Georgia, serif;
+    --mono:    "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+    --r-xs: 4px;
+    --r-sm: 8px;
+    --r-md: 14px;
+    --r-lg: 20px;
+
+    --z-nav: 30;
+    --z-pop: 60;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  main {
+    scroll-snap-type: y mandatory;
+    overflow-y: auto;
+    height: 100vh;
+  }
+  section.slide {
+    scroll-snap-align: start;
+    min-height: 100dvh;
+    padding: clamp(56px, 7vw, 96px) clamp(24px, 6vw, 88px);
+    display: grid;
+    align-content: center;
+    gap: 32px;
+    border-bottom: 1px solid var(--line);
+    position: relative;
+  }
+
+  h1, h2, h3 {
+    color: var(--ink);
+    font-weight: 500;
+    letter-spacing: -0.025em;
+    text-wrap: balance;
+    margin: 0;
+  }
+  h1 { font-family: var(--display); font-size: clamp(2.8rem, 6.2vw, 5.4rem); line-height: 0.98; letter-spacing: -0.035em; font-weight: 500; }
+  h1 em { font-style: italic; color: var(--accent); font-weight: 400; }
+  h2 { font-family: var(--display); font-size: clamp(2rem, 4vw, 3.2rem); line-height: 1.03; font-weight: 500; letter-spacing: -0.02em; }
+  h3 { font-family: var(--sans); font-size: 1.05rem; font-weight: 600; letter-spacing: -0.005em; }
+  p  { max-width: 64ch; color: var(--ink-2); text-wrap: pretty; margin: 0; }
+  p.lead { font-size: 1.2rem; color: var(--ink-2); max-width: 60ch; }
+  code { font-family: var(--mono); font-size: 0.9em; background: var(--surface-2); padding: 2px 6px; border-radius: 4px; color: var(--accent); }
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 500;
+  }
+
+  header.mark {
+    position: fixed;
+    top: clamp(20px, 3vw, 30px);
+    left: clamp(24px, 4vw, 48px);
+    z-index: var(--z-nav);
+    display: flex; gap: 10px; align-items: center;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--ink);
+  }
+  header.mark .dot { width: 8px; height: 8px; background: var(--accent); border-radius: 50%; }
+  header.mark .sep { color: var(--muted); }
+
+  nav.rail {
+    position: fixed;
+    right: clamp(16px, 2.5vw, 32px);
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: var(--z-nav);
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  nav.rail a {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--line);
+    transition: background 200ms var(--ease-out), transform 200ms var(--ease-out);
+  }
+  nav.rail a:hover { background: var(--accent); transform: scale(1.4); }
+
+  /* Buttons — emil's scale-on-press */
+  .btn {
+    display: inline-flex; align-items: center; gap: 10px;
+    padding: 11px 18px;
+    border-radius: var(--r-sm);
+    font-family: var(--sans);
+    font-weight: 500;
+    font-size: 14px;
+    letter-spacing: -0.005em;
+    cursor: pointer;
+    border: 1px solid transparent;
+    text-decoration: none;
+    transition: transform 160ms var(--ease-out), background 180ms var(--ease-out);
+    white-space: nowrap;
+  }
+  .btn:hover { transform: translateY(-1px); }
+  .btn:active { transform: scale(0.97); transition-duration: 100ms; }
+  .btn.primary { background: var(--accent); color: oklch(0.18 0.012 80); }
+  .btn.primary:hover { background: var(--accent-2); }
+  .btn.ghost { background: transparent; color: var(--ink); border-color: var(--line); }
+  .btn.ghost:hover { background: var(--surface); }
+  .btn-row { display: flex; gap: 12px; flex-wrap: wrap; }
+
+  /* ===== Slide 01 — Cover ===== */
+  .cover { display: grid; grid-template-columns: 1fr; align-items: center; gap: 40px; background: var(--bg); }
+  @media (min-width: 880px) { .cover { grid-template-columns: 1.05fr 0.95fr; } }
+  .cover .meta { display: grid; gap: 24px; max-width: 36rem; }
+  .read-box {
+    border: 1px solid var(--line);
+    background: var(--surface);
+    border-radius: var(--r-md);
+    padding: 20px 24px;
+    display: grid; gap: 8px;
+  }
+  .read-box .label {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  .read-box .read { font-size: 15px; color: var(--ink); }
+  .read-box .read em { font-style: italic; color: var(--ink); font-weight: 500; }
+  .skill-pills { display: flex; flex-wrap: wrap; gap: 8px; }
+  .skill-pills .pill {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 6px 12px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    color: var(--ink-2);
+    background: var(--surface);
+  }
+  .skill-pills .pill .num { color: var(--accent); margin-right: 6px; }
+
+  /* Cover visual — three-disc Venn diagram */
+  .venn {
+    aspect-ratio: 1 / 1;
+    max-width: 460px;
+    width: 100%;
+    margin-left: auto;
+    position: relative;
+  }
+  .venn svg { width: 100%; height: 100%; display: block; }
+  .venn circle { mix-blend-mode: screen; }
+
+  /* ===== Slide 02 — Why combine ===== */
+  .why-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  @media (min-width: 880px) { .why-grid { grid-template-columns: 1fr 1fr 1fr; } }
+  .why {
+    border: 1px solid var(--line);
+    background: var(--surface);
+    border-radius: var(--r-md);
+    padding: 24px 24px 22px;
+    display: grid;
+    gap: 12px;
+  }
+  .why .num {
+    font-family: var(--display);
+    font-size: 2.8rem;
+    line-height: 1;
+    color: var(--accent);
+    font-weight: 400;
+    letter-spacing: -0.04em;
+  }
+  .why h3 { font-family: var(--display); font-size: 1.4rem; font-weight: 500; letter-spacing: -0.02em; color: var(--ink); }
+  .why p { font-size: 14px; }
+  .why .who {
+    margin-top: auto;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: 0.06em;
+  }
+
+  /* ===== Slide 03 — Three altitudes (diagram) ===== */
+  .altitudes {
+    display: grid;
+    gap: 14px;
+    max-width: 1100px;
+  }
+  .alt {
+    display: grid;
+    grid-template-columns: 110px 1fr 1fr;
+    gap: 24px;
+    align-items: stretch;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    padding: 22px 24px;
+  }
+  .alt .level {
+    display: grid;
+    gap: 6px;
+    align-content: center;
+  }
+  .alt .level .n {
+    font-family: var(--display);
+    font-size: 2.4rem;
+    line-height: 1;
+    color: var(--accent);
+    font-weight: 500;
+  }
+  .alt .level .l {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .alt .what h4 { margin: 0 0 6px; font-size: 15px; font-weight: 600; color: var(--ink); }
+  .alt .what p  { font-size: 13.5px; }
+  .alt .owner   { display: grid; gap: 6px; align-content: start; }
+  .alt .owner .lbl { font-family: var(--mono); font-size: 11px; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; }
+  .alt .owner .skill { font-family: var(--mono); font-size: 13px; color: var(--accent); font-weight: 500; }
+  @media (max-width: 720px) {
+    .alt { grid-template-columns: 1fr; }
+  }
+
+  /* ===== Slide 04 — Unified flow ===== */
+  .flow {
+    display: grid;
+    gap: 10px;
+  }
+  .fstep {
+    display: grid;
+    grid-template-columns: 56px 1fr auto;
+    gap: 18px;
+    align-items: start;
+    padding: 18px 22px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    transition: transform 200ms var(--ease-out), border-color 200ms var(--ease-out);
+  }
+  .fstep:hover { transform: translateY(-1px); border-color: var(--accent-soft); }
+  .fstep .n {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--accent);
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    padding-top: 2px;
+  }
+  .fstep h4 { margin: 0 0 4px; font-size: 14.5px; color: var(--ink); font-weight: 600; }
+  .fstep p  { font-size: 13px; }
+  .fstep .by {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    color: var(--accent);
+    padding: 4px 10px;
+    border: 1px solid var(--accent-soft);
+    border-radius: 999px;
+    background: var(--accent-soft);
+  }
+
+  /* ===== Slide 05 — Conflict resolution ===== */
+  table.conf {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    overflow: hidden;
+  }
+  table.conf th, table.conf td {
+    text-align: left;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--line-2);
+    font-size: 13.5px;
+    vertical-align: top;
+    color: var(--ink-2);
+  }
+  table.conf th {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    background: var(--bg);
+  }
+  table.conf td:first-child { color: var(--ink); font-weight: 500; }
+  table.conf td.win { color: var(--accent); font-family: var(--mono); font-size: 12.5px; }
+  table.conf tr:last-child td { border-bottom: 0; }
+
+  /* ===== Slide 06 — Ownership matrix ===== */
+  .own-grid {
+    display: grid;
+    gap: 1px;
+    background: var(--line);
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    overflow: hidden;
+    grid-template-columns: 1fr 1fr 1fr;
+  }
+  .own {
+    background: var(--surface);
+    padding: 22px 22px;
+    display: grid;
+    gap: 12px;
+  }
+  .own h4 {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  .own h3 { font-family: var(--display); font-size: 1.5rem; font-weight: 500; letter-spacing: -0.02em; }
+  .own ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; }
+  .own li {
+    font-size: 13.5px;
+    color: var(--ink-2);
+    padding-left: 16px;
+    position: relative;
+  }
+  .own li::before {
+    content: "";
+    position: absolute;
+    left: 0; top: 9px;
+    width: 6px; height: 6px;
+    background: var(--accent);
+    border-radius: 50%;
+  }
+  @media (max-width: 760px) { .own-grid { grid-template-columns: 1fr; } }
+
+  /* ===== Slide 07 — Worked example (hero panel) ===== */
+  .worked {
+    display: grid;
+    gap: 24px;
+  }
+  @media (min-width: 880px) { .worked { grid-template-columns: 1fr 1fr; } }
+  .demo-hero {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    padding: 36px 32px 32px;
+    display: grid;
+    gap: 22px;
+    align-content: start;
+  }
+  .demo-hero .h-eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--accent);
+    font-weight: 500;
+  }
+  .demo-hero h3 {
+    font-family: var(--display);
+    font-size: clamp(1.8rem, 3.4vw, 2.4rem);
+    font-weight: 500;
+    letter-spacing: -0.022em;
+    line-height: 1.04;
+    color: var(--ink);
+  }
+  .demo-hero h3 em { color: var(--accent); font-style: italic; }
+  .demo-hero p { font-size: 14.5px; color: var(--ink-2); max-width: 38ch; }
+  .demo-hero .h-row { display: flex; gap: 10px; }
+  .demo-hero .h-btn {
+    padding: 10px 18px;
+    border-radius: var(--r-sm);
+    background: var(--accent);
+    color: oklch(0.18 0.012 80);
+    border: 0;
+    font-family: var(--sans);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: transform 160ms var(--ease-out), background 180ms var(--ease-out);
+  }
+  .demo-hero .h-btn:active { transform: scale(0.97); }
+  .demo-hero .h-btn.ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); }
+  .demo-hero .h-btn.ghost:hover { background: var(--surface-2); }
+
+  .annot {
+    display: grid;
+    gap: 12px;
+    align-content: start;
+  }
+  .ant {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 12px;
+    align-items: start;
+    padding: 12px 16px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--r-sm);
+  }
+  .ant .src {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    color: var(--accent);
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: var(--accent-soft);
+    height: fit-content;
+    white-space: nowrap;
+  }
+  .ant p { font-size: 13.5px; color: var(--ink-2); margin: 0; }
+
+  /* ===== Slide 08 — Plugin tree ===== */
+  .pkg-grid { display: grid; gap: 20px; }
+  @media (min-width: 880px) { .pkg-grid { grid-template-columns: 1fr 1.2fr; } }
+  pre.tree {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    padding: 22px 24px;
+    margin: 0;
+    overflow-x: auto;
+    font-family: var(--mono);
+    font-size: 12.5px;
+    line-height: 1.6;
+    color: var(--ink-2);
+  }
+  pre.tree .acc { color: var(--accent); }
+  pre.tree .dim { color: var(--muted); }
+  pre.tree .ink { color: var(--ink); }
+
+  .pkg-notes {
+    display: grid;
+    gap: 12px;
+    align-content: start;
+  }
+  .pkg-note {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    padding: 18px 22px;
+    display: grid;
+    gap: 6px;
+  }
+  .pkg-note h4 {
+    font-family: var(--sans);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ink);
+  }
+  .pkg-note p { font-size: 13.5px; }
+
+  /* ===== Slide 09 — Command surface ===== */
+  .cmds {
+    display: grid;
+    gap: 1px;
+    background: var(--line);
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    overflow: hidden;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  }
+  .cmd {
+    background: var(--surface);
+    padding: 22px 22px 18px;
+    display: grid;
+    gap: 8px;
+    transition: background 180ms var(--ease-out);
+  }
+  .cmd:hover { background: var(--surface-2); }
+  .cmd .name {
+    font-family: var(--mono);
+    font-size: 14px;
+    color: var(--accent);
+    font-weight: 500;
+  }
+  .cmd .name::before {
+    content: "/";
+    color: var(--muted);
+    margin-right: 1px;
+  }
+  .cmd .phase {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .cmd p { font-size: 13.5px; margin: 0; }
+  .cmd .chain {
+    margin-top: 4px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ink-2);
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 4px 8px;
+    width: fit-content;
+  }
+
+  /* ===== Slide 10 — Hook composition ===== */
+  .hook-stack {
+    display: grid;
+    gap: 8px;
+  }
+  .hook {
+    display: grid;
+    grid-template-columns: 90px 100px 1fr;
+    gap: 16px;
+    align-items: center;
+    padding: 14px 18px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--r-sm);
+  }
+  .hook .moment {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .hook .skill {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--ink);
+    padding: 2px 8px;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    background: var(--bg);
+    width: fit-content;
+  }
+  .hook p { font-size: 13px; margin: 0; }
+  @media (max-width: 720px) {
+    .hook { grid-template-columns: 1fr; }
+  }
+
+  /* ===== Slide 11 — Migration / adoption ===== */
+  .adoption {
+    display: grid;
+    gap: 16px;
+  }
+  @media (min-width: 880px) { .adoption { grid-template-columns: repeat(3, 1fr); } }
+  .ado {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    padding: 24px;
+    display: grid;
+    gap: 10px;
+  }
+  .ado .lbl {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  .ado h4 { font-family: var(--display); font-size: 1.3rem; font-weight: 500; letter-spacing: -0.018em; color: var(--ink); }
+  .ado p { font-size: 13.5px; }
+  .ado code { font-size: 12px; }
+
+  /* ===== Slide 13 — /magic --surprise pipeline ===== */
+  .surprise-pipe {
+    display: grid;
+    gap: 14px;
+    align-items: stretch;
+    grid-template-columns: 1fr;
+  }
+  @media (min-width: 880px) {
+    .surprise-pipe {
+      grid-template-columns:
+        minmax(0, 1.05fr) 44px
+        minmax(0, 1.15fr) 44px
+        minmax(0, 1.05fr) 44px
+        minmax(0, 1.25fr) 44px
+        minmax(0, 0.9fr);
+      gap: 10px;
+    }
+  }
+  .pipe-box {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    padding: 18px 18px 16px;
+    display: grid;
+    gap: 8px;
+    align-content: start;
+    min-width: 0;
+  }
+  .pipe-box.tinted { background: var(--surface-2); }
+  .pipe-box .lbl {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .pipe-box h4 {
+    font-family: var(--sans);
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--ink);
+    margin: 0;
+    letter-spacing: -0.005em;
+  }
+  .pipe-box .detail {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--ink-2);
+    line-height: 1.55;
+    margin: 0;
+  }
+  .pipe-box .detail span {
+    display: block;
+  }
+  .pipe-box.intent h4 { color: var(--accent); font-family: var(--mono); font-size: 13px; }
+  .pipe-box.artifacts .detail span {
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 4px 8px;
+    margin-bottom: 4px;
+    color: var(--accent);
+  }
+  .pipe-box.audit { border-color: var(--accent-soft); }
+  .pipe-box.audit h4 { color: var(--accent); }
+
+  .pipe-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    min-height: 36px;
+  }
+  .pipe-arrow svg { width: 100%; height: 22px; display: block; color: var(--line); }
+  .pipe-arrow .note {
+    position: absolute;
+    top: -16px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    white-space: nowrap;
+    background: var(--bg);
+    padding: 0 6px;
+  }
+  @media (max-width: 879px) {
+    .pipe-arrow { min-height: 56px; }
+    .pipe-arrow svg { width: 22px; height: 56px; }
+    .pipe-arrow .note {
+      position: static;
+      transform: none;
+      margin-left: 12px;
+      background: transparent;
+      padding: 0;
+    }
+    .pipe-arrow { justify-content: flex-start; padding-left: 18px; }
+  }
+
+  .surprise-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 6px;
+  }
+  .surprise-pills .pill {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 6px 12px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    color: var(--ink-2);
+    background: var(--surface);
+  }
+  .surprise-pills .pill strong { color: var(--accent); font-weight: 500; margin-right: 6px; }
+
+  .surprise-callouts {
+    display: grid;
+    gap: 14px;
+    margin-top: 8px;
+    grid-template-columns: 1fr;
+  }
+  @media (min-width: 720px) {
+    .surprise-callouts { grid-template-columns: 1fr 1fr; }
+  }
+  .callout {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    padding: 18px 20px;
+    display: grid;
+    gap: 8px;
+  }
+  .callout.warn { border-color: var(--line-2); background: var(--bg); }
+  .callout .lbl {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  .callout.warn .lbl { color: var(--muted); }
+  .callout ul { margin: 0; padding-left: 18px; }
+  .callout li { font-size: 13.5px; color: var(--ink-2); margin-bottom: 6px; line-height: 1.5; }
+  .callout li:last-child { margin-bottom: 0; }
+
+  /* ===== End ===== */
+  .end {
+    background: oklch(0.13 0.01 250);
+  }
+  .end h2 { color: var(--ink); }
+  .end .stat-row {
+    display: grid; gap: 0;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    overflow: hidden;
+  }
+  .end .stat {
+    padding: 22px;
+    background: var(--surface);
+    border-right: 1px solid var(--line);
+    display: grid; gap: 4px;
+  }
+  .end .stat:last-child { border-right: 0; }
+  .end .stat .lbl { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+  .end .stat .vv { font-family: var(--display); font-size: 1.6rem; font-weight: 500; color: var(--ink); letter-spacing: -0.025em; }
+
+  /* prefers-reduced-motion */
+  @media (prefers-reduced-motion: reduce) {
+    *,*::before,*::after {
+      animation-duration: 0.001ms !important;
+      transition-duration: 0.001ms !important;
+      transition-delay: 0ms !important;
+    }
+  }
+</style>
+</head>
+<body>
+
+<header class="mark">
+  <span class="dot" aria-hidden="true"></span>
+  <span>Deck 04</span>
+  <span class="sep">/</span>
+  <span>Combined approach</span>
+</header>
+
+<nav class="rail" aria-label="Slides">
+  <a href="#s1"></a><a href="#s2"></a><a href="#s3"></a><a href="#s4"></a>
+  <a href="#s5"></a><a href="#s6"></a><a href="#s7"></a><a href="#s8"></a>
+  <a href="#s9"></a><a href="#s10"></a><a href="#s11"></a><a href="#s12"></a>
+  <a href="#s13"></a><a href="#s14"></a>
+</nav>
+
+<main>
+
+  <!-- 01 — Cover -->
+  <section id="s1" class="slide cover">
+    <div class="meta">
+      <span class="eyebrow">Combined approach · skill no. 04</span>
+      <h1>Three skills. One <em>workflow</em>. No conflict.</h1>
+      <p class="lead">Impeccable owns the project lifecycle. The taste skill owns the page-level brief. Emil owns the component-level craft. Stacked, they cover every altitude — and the conflicts that look real on paper are easily resolved by ownership.</p>
+
+      <div class="read-box">
+        <span class="label">Design Read</span>
+        <p class="read">Reading this as: <em>workflow manifesto</em> for design engineers, with an <em>editorial-technical</em> language, leaning toward <em>dark mode + sans display + restrained motion</em>.</p>
+      </div>
+
+      <div class="skill-pills">
+        <span class="pill"><span class="num">01</span>impeccable</span>
+        <span class="pill"><span class="num">02</span>design-taste-frontend</span>
+        <span class="pill"><span class="num">03</span>emil-design-eng</span>
+      </div>
+
+      <div class="btn-row">
+        <a class="btn primary" href="#s2">Read the workflow</a>
+        <a class="btn ghost" href="index.html">All decks</a>
+      </div>
+    </div>
+
+    <div class="venn" aria-hidden="true">
+      <svg viewBox="0 0 460 460">
+        <circle cx="180" cy="180" r="130" fill="oklch(0.55 0.16 35 / 0.55)"   />
+        <circle cx="280" cy="180" r="130" fill="oklch(0.55 0.16 245 / 0.55)" />
+        <circle cx="230" cy="280" r="130" fill="oklch(0.58 0.14 165 / 0.55)" />
+        <text x="120" y="160" fill="#fff" font-family="Geist Mono, monospace" font-size="13" letter-spacing="1">IMPECCABLE</text>
+        <text x="248" y="160" fill="#fff" font-family="Geist Mono, monospace" font-size="13" letter-spacing="1">TASTE</text>
+        <text x="194" y="330" fill="#fff" font-family="Geist Mono, monospace" font-size="13" letter-spacing="1">EMIL</text>
+        <text x="170" y="240" fill="oklch(0.95 0.02 80)" font-family="Fraunces, serif" font-style="italic" font-size="22">unison</text>
+      </svg>
+    </div>
+  </section>
+
+  <!-- 02 — Why combine -->
+  <section id="s2" class="slide">
+    <h2>Why combine them.</h2>
+    <p>Each skill is rigorous, but each leaves a real gap. Their gaps are the others' strengths.</p>
+    <div class="why-grid">
+      <div class="why">
+        <span class="num">01</span>
+        <h3>Impeccable owns the project.</h3>
+        <p>Loads context, picks a register, runs commands across the lifecycle. But it's general — page-level rules and component micro-details aren't its altitude.</p>
+        <span class="who">owns: project + register</span>
+      </div>
+      <div class="why">
+        <span class="num">02</span>
+        <h3>The taste skill owns the page.</h3>
+        <p>Reads the room, sets dials, picks a stack, enforces mechanical Pre-Flight checks. But it's scoped to landing / portfolio / redesign — and stops at the page boundary.</p>
+        <span class="who">owns: page-level brief</span>
+      </div>
+      <div class="why">
+        <span class="num">03</span>
+        <h3>Emil owns the component.</h3>
+        <p>Every animation tested, every easing curve picked, every transform-origin honored. But it's silent on color, stack choice, layout grammar.</p>
+        <span class="who">owns: component + motion</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 03 — Three altitudes -->
+  <section id="s3" class="slide">
+    <span class="eyebrow">03 of 03 eyebrows used in this deck</span>
+    <h2>Three altitudes, three owners.</h2>
+    <p>Every design question lives at one altitude. Knowing which skill owns it removes the guesswork.</p>
+    <div class="altitudes">
+      <div class="alt">
+        <div class="level"><span class="n">01</span><span class="l">Project</span></div>
+        <div class="what">
+          <h4>Lifecycle, register, brand-or-product, commands across surfaces</h4>
+          <p>Setup, context loading, color strategy, audit, polish, harden, document, ship.</p>
+        </div>
+        <div class="owner"><span class="lbl">Owner</span><span class="skill">impeccable</span></div>
+      </div>
+      <div class="alt">
+        <div class="level"><span class="n">02</span><span class="l">Page</span></div>
+        <div class="what">
+          <h4>Brief inference, dial setting, stack pick, section grammar, Pre-Flight</h4>
+          <p>Design Read, VARIANCE / MOTION / DENSITY, hero discipline, eyebrow restraint, layout diversification.</p>
+        </div>
+        <div class="owner"><span class="lbl">Owner</span><span class="skill">design-taste-frontend</span></div>
+      </div>
+      <div class="alt">
+        <div class="level"><span class="n">03</span><span class="l">Component</span></div>
+        <div class="what">
+          <h4>Animation Decision Framework, easing, transform-origin, interruptibility</h4>
+          <p>Custom curves, scale-on-press feedback, popover origin awareness, asymmetric enter/exit, stagger.</p>
+        </div>
+        <div class="owner"><span class="lbl">Owner</span><span class="skill">emil-design-eng</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 04 — Unified flow -->
+  <section id="s4" class="slide">
+    <h2>The unified flow.</h2>
+    <p>Seven steps from blank canvas to ship-ready. Each step is owned by exactly one skill — no overlap, no race condition.</p>
+    <div class="flow">
+      <div class="fstep"><span class="n">01</span><div><h4>Read the room</h4><p>State the one-line Design Read. Page kind · audience · vibe · stack. No code yet.</p></div><span class="by">taste</span></div>
+      <div class="fstep"><span class="n">02</span><div><h4>Load project context</h4><p>Run <code>impeccable/scripts/context.mjs</code>. PRODUCT.md, DESIGN.md, existing tokens. Pick the register: brand or product.</p></div><span class="by">impeccable</span></div>
+      <div class="fstep"><span class="n">03</span><div><h4>Set the dials</h4><p>VARIANCE / MOTION / DENSITY from the read. Override the 8 / 6 / 4 baseline when the brief justifies it.</p></div><span class="by">taste</span></div>
+      <div class="fstep"><span class="n">04</span><div><h4>Pick the stack</h4><p>If the brief reads as a known system (Fluent, Material, Carbon, govuk-frontend), install the official package. Else: Tailwind v4 + Geist + Motion.</p></div><span class="by">taste</span></div>
+      <div class="fstep"><span class="n">05</span><div><h4>Build with the rules</h4><p>Impeccable's General Rules + register reference. Taste's hero discipline, eyebrow restraint, no-section-repeat. OKLCH throughout.</p></div><span class="by">impeccable + taste</span></div>
+      <div class="fstep"><span class="n">06</span><div><h4>Polish every interaction</h4><p>For each animation: should it · purpose · easing · duration. Custom curves. scale(0.97) on :active. Popovers from origin. Asymmetric enter/exit. Reduced-motion always.</p></div><span class="by">emil</span></div>
+      <div class="fstep"><span class="n">07</span><div><h4>Audit before ship</h4><p>Pre-Flight checklist · AI slop test (both altitudes) · emil's review table on the diff. Match-and-rewrite any ban.</p></div><span class="by">all three</span></div>
+    </div>
+  </section>
+
+  <!-- 05 — Conflict resolution -->
+  <section id="s5" class="slide">
+    <h2>Conflict resolution.</h2>
+    <p>Three conflicts look real on paper. All three resolve by ownership — the skill at the relevant altitude wins.</p>
+    <table class="conf" aria-label="Conflict resolution matrix">
+      <thead>
+        <tr><th>Conflict</th><th>Impeccable says</th><th>Taste says</th><th>Emil says</th><th>Winner</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Bounce in easing</td>
+          <td>No bounce. Exponential ease-out.</td>
+          <td>Silent on bounce shape.</td>
+          <td>Subtle 0.1–0.3 OK for playful / drag UI.</td>
+          <td class="win">impeccable · for UI; emil · for drag-to-dismiss only</td>
+        </tr>
+        <tr>
+          <td>Eyebrows</td>
+          <td>Banned as scaffolding when on every section.</td>
+          <td>Max 1 per 3 sections, mechanical count.</td>
+          <td>Silent.</td>
+          <td class="win">taste · its count is the operational rule</td>
+        </tr>
+        <tr>
+          <td>Default sans font</td>
+          <td>Doesn't prescribe.</td>
+          <td>Discourages Inter. Reach for Geist / Outfit / Satoshi first.</td>
+          <td>Silent on family.</td>
+          <td class="win">taste · brief-aware</td>
+        </tr>
+        <tr>
+          <td>Animation altitude</td>
+          <td>"Motion must be intentional."</td>
+          <td>Picks the pattern (sticky stack, horizontal pan).</td>
+          <td>Picks the curve, duration, origin.</td>
+          <td class="win">taste · pattern; emil · values</td>
+        </tr>
+        <tr>
+          <td>Beige / cream backgrounds</td>
+          <td>"Saturated AI default of 2026." Banned.</td>
+          <td>Premium-consumer beige+brass family banned.</td>
+          <td>Silent.</td>
+          <td class="win">both agree · use the rotation table</td>
+        </tr>
+        <tr>
+          <td>Marketing copy</td>
+          <td>No marketing buzzwords. No em dashes.</td>
+          <td>Copy self-audit. Cut AI cute-but-wrong phrases.</td>
+          <td>Silent.</td>
+          <td class="win">both agree · enforce together</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 06 — Ownership matrix -->
+  <section id="s6" class="slide">
+    <h2>What each skill owns.</h2>
+    <p>The clean partition. When you're stuck, ask which row your question sits in — and only consult that skill's reference.</p>
+    <div class="own-grid">
+      <div class="own">
+        <h4>Impeccable</h4>
+        <h3>Project &amp; register</h3>
+        <ul>
+          <li>PRODUCT.md / DESIGN.md context loading</li>
+          <li>Brand vs. product register split</li>
+          <li>Color strategy (restrained · committed · full · drenched)</li>
+          <li>OKLCH palette + tinted neutrals</li>
+          <li>Cross-register absolute bans</li>
+          <li>Sub-commands: critique, audit, polish, harden, document, extract, ship</li>
+          <li>AI slop test (first + second order)</li>
+        </ul>
+      </div>
+      <div class="own">
+        <h4>Taste skill</h4>
+        <h3>Page &amp; brief</h3>
+        <ul>
+          <li>Design Read (one-line)</li>
+          <li>VARIANCE / MOTION / DENSITY dials</li>
+          <li>Brief → real design system map</li>
+          <li>Anti-default discipline (Inter, AI-purple, beige+brass)</li>
+          <li>Hero discipline (max 4 elements, fits viewport)</li>
+          <li>Eyebrow / section / zigzag / marquee limits</li>
+          <li>Pre-Flight checklist (mechanical)</li>
+        </ul>
+      </div>
+      <div class="own">
+        <h4>Emil</h4>
+        <h3>Component &amp; motion</h3>
+        <ul>
+          <li>Animation Decision Framework</li>
+          <li>Custom easing curves (3 named)</li>
+          <li>Duration ceiling (≤300ms UI)</li>
+          <li>Spring physics for drag / alive elements</li>
+          <li>scale(0.97) on every :active</li>
+          <li>Never scale(0); always 0.95 + opacity</li>
+          <li>Popover transform-origin</li>
+          <li>clip-path tricks (hold-to-delete, image reveal)</li>
+          <li>Review-as-markdown-table format</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- 07 — Worked example -->
+  <section id="s7" class="slide">
+    <h2>One hero, three skills.</h2>
+    <p>The hero panel on the left was built by walking the unified flow. The labels on the right show which skill made which call.</p>
+    <div class="worked">
+      <div class="demo-hero">
+        <span class="h-eyebrow">Product · v1</span>
+        <h3>Ship interfaces that don't <em>look</em> AI-made.</h3>
+        <p>Three skills stacked into one workflow. Read the brief, build the structure, polish the details — without re-litigating the same decision three times.</p>
+        <div class="h-row">
+          <button class="h-btn" type="button">Get started</button>
+          <button class="h-btn ghost" type="button">View on GitHub</button>
+        </div>
+      </div>
+      <div class="annot">
+        <div class="ant"><span class="src">taste</span><p>Hero stack ≤ 4 elements (eyebrow + headline + sub + CTA). Eyebrow allowed because this is the first eyebrow on the page.</p></div>
+        <div class="ant"><span class="src">taste</span><p>Two CTAs, distinct intents ("get started" vs "view on GitHub"). No duplicate-intent fail.</p></div>
+        <div class="ant"><span class="src">impeccable</span><p>Committed color strategy: one saturated accent (amber) carries the CTA and emphasis. Body bg is OKLCH-tinted dark slate, biased toward the accent hue.</p></div>
+        <div class="ant"><span class="src">impeccable</span><p>Display headline uses italic emphasis on a single word, same family — not a serif-into-sans injection.</p></div>
+        <div class="ant"><span class="src">emil</span><p>Both buttons have <code>transform: scale(0.97)</code> on <code>:active</code>, 160ms via the strong ease-out curve.</p></div>
+        <div class="ant"><span class="src">emil</span><p>Hover translateY(-1px) gives instant feedback before the press. Press it.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 08 — Plugin structure -->
+  <section id="s8" class="slide">
+    <h2>The plugin: <em>presto</em>.</h2>
+    <p>One plugin, three skills, shared scripts, shared memory. The structure mirrors how the work flows.</p>
+    <div class="pkg-grid">
+<pre class="tree" aria-label="Plugin file tree"><span class="dim">presto/</span>
+├── <span class="ink">plugin.json</span>                  <span class="dim"># manifest</span>
+├── <span class="ink">README.md</span>
+├── skills/
+│   ├── <span class="acc">impeccable/</span>            <span class="dim"># project altitude</span>
+│   │   ├── SKILL.md
+│   │   ├── reference/         <span class="dim"># craft, polish, audit, …</span>
+│   │   └── scripts/           <span class="dim"># context, palette, live</span>
+│   ├── <span class="acc">design-taste/</span>          <span class="dim"># page altitude</span>
+│   │   └── SKILL.md
+│   └── <span class="acc">emil-design-eng/</span>       <span class="dim"># component altitude</span>
+│       └── SKILL.md
+├── commands/                  <span class="dim"># unified slash commands</span>
+│   ├── design-read.md
+│   ├── set-dials.md
+│   ├── design-flow.md
+│   ├── design-audit.md
+│   └── design-review.md
+├── hooks/
+│   ├── SessionStart.js        <span class="dim"># load context once</span>
+│   └── PreCompact.js          <span class="dim"># save Design Read state</span>
+├── memory/
+│   ├── DESIGN_READ.md         <span class="dim"># this project's read</span>
+│   └── DIALS.json             <span class="dim"># persisted dial values</span>
+└── shared/
+    ├── <span class="ink">easing.css</span>             <span class="dim"># emil's named curves</span>
+    ├── <span class="ink">palette-tools.mjs</span>      <span class="dim"># impeccable's seed</span>
+    └── <span class="ink">preflight.mjs</span>          <span class="dim"># taste's check runner</span>
+</pre>
+
+      <div class="pkg-notes">
+        <div class="pkg-note">
+          <h4>Why one plugin instead of three</h4>
+          <p>Shared <code>shared/</code> means easing curves and palette tools aren't duplicated. The Design Read is written once and consumed by all three.</p>
+        </div>
+        <div class="pkg-note">
+          <h4>Why three skills not one</h4>
+          <p>Each skill keeps its own description and trigger context. Claude picks the right one based on the user's altitude — the SKILL.md descriptions stay specific and discoverable.</p>
+        </div>
+        <div class="pkg-note">
+          <h4>SessionStart hook</h4>
+          <p>Loads the Design Read and Dials into context once. No skill re-runs <code>context.mjs</code> redundantly.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 09 — Command surface -->
+  <section id="s9" class="slide">
+    <h2>Unified command surface.</h2>
+    <p>Five new slash commands shape the workflow. The original 25 impeccable commands stay reachable via <code>/impeccable &lt;cmd&gt;</code>.</p>
+    <div class="cmds">
+      <div class="cmd">
+        <span class="phase">Phase 01</span>
+        <span class="name">design-read</span>
+        <p>Run the brief-inference step. Writes the one-line Design Read to <code>memory/DESIGN_READ.md</code>.</p>
+        <span class="chain">taste · then impeccable</span>
+      </div>
+      <div class="cmd">
+        <span class="phase">Phase 02</span>
+        <span class="name">set-dials</span>
+        <p>Choose VARIANCE / MOTION / DENSITY from a use-case preset or conversationally.</p>
+        <span class="chain">taste</span>
+      </div>
+      <div class="cmd">
+        <span class="phase">Phase 03–06</span>
+        <span class="name">design-flow [feature]</span>
+        <p>The full unified flow: read → context → dials → stack → build → polish. Calls each skill in order.</p>
+        <span class="chain">all three</span>
+      </div>
+      <div class="cmd">
+        <span class="phase">Phase 07</span>
+        <span class="name">design-audit [target]</span>
+        <p>Pre-Flight + AI slop test + a11y. Returns a single consolidated report.</p>
+        <span class="chain">taste + impeccable</span>
+      </div>
+      <div class="cmd">
+        <span class="phase">Phase 07</span>
+        <span class="name">design-review [diff]</span>
+        <p>Emil's mandatory markdown-table review on the current diff. One row per issue.</p>
+        <span class="chain">emil</span>
+      </div>
+      <div class="cmd">
+        <span class="phase">Bypass</span>
+        <span class="name">impeccable [cmd]</span>
+        <p>Direct access to any of the 25 impeccable sub-commands. Unchanged behavior.</p>
+        <span class="chain">impeccable</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 10 — Hook composition -->
+  <section id="s10" class="slide">
+    <h2>When each skill fires.</h2>
+    <p>The hook stack runs in order. Earlier hooks load shared context; later skills consume it without re-running setup.</p>
+    <div class="hook-stack">
+      <div class="hook">
+        <span class="moment">SessionStart</span>
+        <span class="skill">shared</span>
+        <p>Read <code>memory/DESIGN_READ.md</code> and <code>memory/DIALS.json</code> into the session. Inject as system reminder.</p>
+      </div>
+      <div class="hook">
+        <span class="moment">SessionStart</span>
+        <span class="skill">impeccable</span>
+        <p>Run <code>context.mjs</code>. If <code>NO_PRODUCT_MD</code>, queue <code>init</code> as the first action.</p>
+      </div>
+      <div class="hook">
+        <span class="moment">UserPromptSubmit</span>
+        <span class="skill">taste</span>
+        <p>If the prompt mentions a page kind (landing, portfolio, redesign) and no Design Read exists, prompt for one.</p>
+      </div>
+      <div class="hook">
+        <span class="moment">PostToolUse</span>
+        <span class="skill">emil</span>
+        <p>On Edit/Write to component files, suggest the review-table format if the diff includes animation properties.</p>
+      </div>
+      <div class="hook">
+        <span class="moment">PreCompact</span>
+        <span class="skill">shared</span>
+        <p>Persist Design Read, Dials, and last critique snapshot. They survive context compression.</p>
+      </div>
+      <div class="hook">
+        <span class="moment">Stop</span>
+        <span class="skill">shared</span>
+        <p>If a build step shipped a hero or landing surface and no Pre-Flight ran, surface it as a suggestion.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 11 — Adoption -->
+  <section id="s11" class="slide">
+    <h2>Adoption path.</h2>
+    <p>Three reasonable starting points, depending on what's already installed.</p>
+    <div class="adoption">
+      <div class="ado">
+        <span class="lbl">Starting fresh</span>
+        <h4>Install presto directly.</h4>
+        <p>The plugin pulls all three skills as siblings. Run <code>/design-read</code> on first invocation; the rest follows from the read.</p>
+        <p><code>/plugin install presto</code></p>
+      </div>
+      <div class="ado">
+        <span class="lbl">Already on impeccable</span>
+        <h4>Layer in taste + emil only.</h4>
+        <p>The plugin detects an existing <code>impeccable/</code> install and skips re-adding it. Memory and shared/ still come along.</p>
+        <p><code>/plugin install presto --partial</code></p>
+      </div>
+      <div class="ado">
+        <span class="lbl">Picking and choosing</span>
+        <h4>Use the skills individually.</h4>
+        <p>Each skill works alone. The cost is repeated setup and no shared Design Read between sessions.</p>
+        <p>This is what you have today.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 12 — The /magic workflow -->
+  <section id="s12" class="slide">
+    <h2>The <em style="font-style: italic; color: var(--accent);">/magic</em> workflow.</h2>
+    <p class="lead">One slash command. Seven phases (plus a conditional cold-start). Six break-out points. Memory that survives the session.</p>
+
+    <div class="flow">
+      <div class="fstep" style="opacity: 0.72; border-style: dashed;"><span class="n">00</span><div><h4>HOUDINI <span style="font-family: var(--mono); font-size: 11px; color: var(--muted); letter-spacing: 0.04em; font-weight: 400; margin-left: 6px;">cold start · creative partner</span></h4><p>The only phase allowed to invent. Drafts 3 real starter HTML files in parallel (safe · contrarian · wildcard), iterates with you in a refine loop, lands <code>DESIGN_APPROACH.md</code> + <code>seeds/starter.html</code> + <code>seeds/tokens.css</code>.</p><p style="font-family: var(--mono); font-size: 11px; color: var(--muted); letter-spacing: 0.04em; margin-top: 4px;">conversational, runs as a skill — <code>/magic</code> recommends it but does not invoke inline.</p></div><span class="by">conditional</span></div>
+      <div class="fstep"><span class="n">01</span><div><h4>READ</h4><p>State the Design Read: kind · audience · vibe · stack hint. Output: <code>{ read, kind, audience, vibe, stack_hint }</code>.</p></div><span class="by">taste</span></div>
+      <div class="fstep"><span class="n">02</span><div><h4>CONTEXT</h4><p>Load PRODUCT.md / DESIGN.md, pick register, set palette strategy, write the scene sentence. Output: <code>{ register, palette_strategy, existing_tokens, scene_sentence }</code>.</p></div><span class="by">impeccable</span></div>
+      <div class="fstep"><span class="n">03</span><div><h4>DIALS</h4><p>VARIANCE · MOTION · DENSITY (1–10) with reasoning tied to the read. Output: <code>{ variance, motion, density, reasoning }</code>.</p></div><span class="by">taste</span></div>
+      <div class="fstep"><span class="n">04</span><div><h4>STACK</h4><p>Map brief to a real design system (Fluent, Material, Carbon, govuk-frontend, shadcn) or Tailwind v4 + Geist + Motion. Output: <code>{ framework, ds_package?, type_family, motion_lib, icons }</code>.</p></div><span class="by">taste</span></div>
+      <div class="fstep"><span class="n">05</span><div><h4>BUILD</h4><p>General Rules + hero discipline + section grammar. Coordinated; no race condition because altitudes don't overlap. Output: <code>{ files_written[], notes }</code>.</p></div><span class="by">impeccable + taste</span></div>
+      <div class="fstep"><span class="n">06</span><div><h4>POLISH</h4><p>Animation Decision Framework on every interaction. Custom curves, asymmetric enter/exit, transform-origin honored, scale(0.97) on :active. Output: <code>{ animations[], review_table_md }</code>.</p></div><span class="by">emil</span></div>
+      <div class="fstep"><span class="n">07</span><div><h4>AUDIT</h4><p>All three skills run in parallel — Pre-Flight matrix, AI slop test (first + second order), emil review table. Output: <code>{ preflight_pass, slop_pass, review_findings, gate }</code>.</p></div><span class="by">all three · parallel</span></div>
+    </div>
+
+    <div class="cmds" style="margin-top: 12px;">
+      <div class="cmd">
+        <span class="phase">Phase 00 · cold start</span>
+        <span class="name">houdini [brief]</span>
+        <p>The creative partner. Three modes: guided (conversational, default), <code>--auto</code> (autonomous solo run), or keywords (e.g. <code>'fintech, dark, terminal'</code>). When invoked without explicit args, TUNE IN now asks which mode via <code>AskUserQuestion</code> — power-user shortcuts via flags still bypass the question. Drafts real starter templates, iterates with you when interactive, lands a starter <code>/magic</code> can build on.</p>
+        <span class="chain">taste + impeccable</span>
+      </div>
+      <div class="cmd">
+        <span class="phase">Entry</span>
+        <span class="name">magic [intent] [--surprise]</span>
+        <p>Full 7-phase flow. Without <code>--surprise</code>: detects cold-start and confirms whether to run <code>/houdini</code> first (yes / no / customize). With <code>--surprise</code>: autonomously runs houdini in wildcard mode, writes the hand-off artifacts, then proceeds through every phase. Zero prompts end to end. Phase outputs persist to <code>presto/memory/</code>.</p>
+        <span class="chain">all three</span>
+      </div>
+      <div class="cmd">
+        <span class="phase">Phase 01</span>
+        <span class="name">design-read</span>
+        <p>Skip to READ. Writes <code>DESIGN_READ.md</code>.</p>
+        <span class="chain">taste</span>
+      </div>
+      <div class="cmd">
+        <span class="phase">Phase 03</span>
+        <span class="name">set-dials</span>
+        <p>Skip to DIALS. Writes <code>DIALS.json</code>.</p>
+        <span class="chain">taste</span>
+      </div>
+      <div class="cmd">
+        <span class="phase">Phase 03–06</span>
+        <span class="name">design-flow [feature]</span>
+        <p>Re-enter the build-and-polish middle without redoing READ + CONTEXT.</p>
+        <span class="chain">all three</span>
+      </div>
+      <div class="cmd">
+        <span class="phase">Phase 07</span>
+        <span class="name">design-audit [target]</span>
+        <p>Pre-Flight + AI slop test. Writes <code>last-audit.json</code>.</p>
+        <span class="chain">taste + impeccable</span>
+      </div>
+      <div class="cmd">
+        <span class="phase">Phase 07</span>
+        <span class="name">design-review [diff]</span>
+        <p>Emil's markdown-table review on the diff. One row per issue.</p>
+        <span class="chain">emil</span>
+      </div>
+    </div>
+
+    <p style="font-family: var(--mono); font-size: 12px; color: var(--muted); letter-spacing: 0.04em; margin-top: 4px;">
+      Passthrough: <code>/impeccable [cmd]</code> still routes to any of the 25 original impeccable sub-commands — unchanged.
+    </p>
+  </section>
+
+  <!-- 13 — /magic --surprise pipeline -->
+  <section id="s13" class="slide">
+    <span class="eyebrow">Slide 13 · the wildcard path</span>
+    <h2><em style="font-style: italic; color: var(--accent);">/magic --surprise</em> — zero to template.</h2>
+    <p class="lead">When the goal is speed and you trust the wildcard, <code>--surprise</code> collapses every confirmation prompt into a single autonomous run. From blank intent to AUDIT, no questions.</p>
+
+    <div class="surprise-pipe">
+      <div class="pipe-box intent">
+        <span class="lbl">Phase 0 · intent</span>
+        <h4>/magic --surprise</h4>
+        <p class="detail"><span>"build a portfolio for a generative-art studio…"</span></p>
+      </div>
+      <div class="pipe-arrow">
+        <span class="note">no prompts</span>
+        <svg viewBox="0 0 100 22" preserveAspectRatio="none" aria-hidden="true"><line x1="0" y1="11" x2="92" y2="11" stroke="currentColor" stroke-width="1"/><polyline points="86,5 96,11 86,17" fill="none" stroke="currentColor" stroke-width="1"/></svg>
+      </div>
+      <div class="pipe-box tinted">
+        <span class="lbl">Houdini workflow</span>
+        <h4>autonomous = true</h4>
+        <p class="detail"><span>n_drafts = 1</span><span>angle = wildcard</span><span>Brief → Draft → Handoff</span></p>
+      </div>
+      <div class="pipe-arrow">
+        <span class="note">3 files written</span>
+        <svg viewBox="0 0 100 22" preserveAspectRatio="none" aria-hidden="true"><line x1="0" y1="11" x2="92" y2="11" stroke="currentColor" stroke-width="1"/><polyline points="86,5 96,11 86,17" fill="none" stroke="currentColor" stroke-width="1"/></svg>
+      </div>
+      <div class="pipe-box artifacts">
+        <span class="lbl">Hand-off artifacts</span>
+        <h4>presto/memory/</h4>
+        <p class="detail"><span>DESIGN_APPROACH.md</span><span>seeds/starter.html</span><span>seeds/tokens.css</span></p>
+      </div>
+      <div class="pipe-arrow">
+        <span class="note">phase 0 finds seed, skips</span>
+        <svg viewBox="0 0 100 22" preserveAspectRatio="none" aria-hidden="true"><line x1="0" y1="11" x2="92" y2="11" stroke="currentColor" stroke-width="1"/><polyline points="86,5 96,11 86,17" fill="none" stroke="currentColor" stroke-width="1"/></svg>
+      </div>
+      <div class="pipe-box tinted">
+        <span class="lbl">Magic workflow</span>
+        <h4>7 phases, linear</h4>
+        <p class="detail"><span>Read → Context → Dials</span><span>Stack → Build → Polish</span><span>Audit</span></p>
+      </div>
+      <div class="pipe-arrow">
+        <span class="note">7 phases run linearly</span>
+        <svg viewBox="0 0 100 22" preserveAspectRatio="none" aria-hidden="true"><line x1="0" y1="11" x2="92" y2="11" stroke="currentColor" stroke-width="1"/><polyline points="86,5 96,11 86,17" fill="none" stroke="currentColor" stroke-width="1"/></svg>
+      </div>
+      <div class="pipe-box audit">
+        <span class="lbl">Gate</span>
+        <h4>AUDIT pass</h4>
+        <p class="detail"><span>preflight ✓</span><span>slop ✓</span><span>review ✓</span></p>
+      </div>
+    </div>
+
+    <div class="surprise-pills">
+      <span class="pill"><strong>0</strong>user prompts</span>
+      <span class="pill"><strong>1</strong>wildcard draft</span>
+      <span class="pill"><strong>8</strong>phases total</span>
+    </div>
+
+    <div class="surprise-callouts">
+      <div class="callout">
+        <span class="lbl">When to use --surprise</span>
+        <ul>
+          <li>You trust the wildcard angle and would rather react to a finished design than pick from drafts.</li>
+          <li>You want maximum velocity from blank brief to AUDIT in a single command.</li>
+        </ul>
+      </div>
+      <div class="callout warn">
+        <span class="lbl">When NOT to use</span>
+        <ul>
+          <li>When the project is high-stakes and you want oversight per phase: use <code>--guided</code>.</li>
+          <li>When you want the three-option spread to evaluate visually: use bare <code>/houdini</code> (guided mode).</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- 14 — End -->
+  <section id="s14" class="slide end">
+    <h2>The combined approach, in one sentence.</h2>
+    <p class="lead">Read the room with taste, load context and pick the register with impeccable, build with both, polish every animation with emil, and audit against all three before ship — packaged as <code>presto</code> so the Design Read and dials persist across sessions.</p>
+    <div class="stat-row">
+      <div class="stat"><span class="lbl">Plugin name</span><span class="vv">presto</span></div>
+      <div class="stat"><span class="lbl">Skills</span><span class="vv">3</span></div>
+      <div class="stat"><span class="lbl">Commands</span><span class="vv">6 new + 25</span></div>
+      <div class="stat"><span class="lbl">Altitudes</span><span class="vv">Project · Page · Component</span></div>
+    </div>
+    <div class="btn-row">
+      <a class="btn primary" href="index.html">Back to index</a>
+      <a class="btn ghost" href="deck-impeccable.html">← Restart at deck 01</a>
+    </div>
+  </section>
+
+</main>
+</body>
+</html>
