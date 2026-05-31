@@ -34,22 +34,38 @@ Houdini supports three invocation modes. Detect the mode from the args BEFORE ru
 
 When args don't specify a mode (case 3), the skill asks the user which mode to use at the start of TUNE IN (see Phase 1, Step 0). The arg-based shortcuts (cases 1 and 2) skip that question entirely — they are the power-user bypass.
 
-**Orthogonal modifier: `--nogen`.** The `--nogen` flag is NOT a mode — it is a modifier that composes with any of the three modes above. When present, the MoodBoard phase is skipped entirely: the MoodBoard agent does not run, no images are generated, and drafters receive an empty visual direction section (falling back to brief + design_read alone, which is the pre-MoodBoard behavior). Strip `--nogen` from args during detection so it does not interfere with mode classification; pass `skip_image_gen: true` to the workflow when present.
+**Orthogonal modifiers.** Three flags are NOT modes — they are modifiers that compose with any of the three modes above and with each other. Strip them from args during detection so they do not interfere with mode classification, capture their values, then pass the resolved values to the workflow.
 
-Example composed invocations:
+| Flag forms | Workflow arg | Default | Cap |
+|---|---|---|---|
+| `--nogen` | `skip_image_gen: true` | (off) | — |
+| `--gen` / `--gen-N` / `--gen=N` / `--gen N` | `mood_board_count: N` | 3 | 1–5 |
+| `--useimg` / `--useimg-N` / `--useimg=N` / `--useimg N` | `embed_images: N` | autonomous→2, others→0 | min(N, mood_board_count) |
+
+**Safety semantics (the workflow enforces these — the skill just passes through the user's literal values):**
+
+- `--nogen` wins over `--gen` and `--useimg`. If `--nogen` is present, the workflow sets `embed_images=0` regardless of what was passed.
+- If both `--useimg N` and `--gen M` are explicit and `N > M`, the workflow clamps useimg to M and emits a top-of-log WARN. No re-entry — the run proceeds.
+- If `--useimg N` is explicit but `--gen` was NOT given and `N > 3`, the workflow silently auto-bumps `mood_board_count` to `min(5, N)`.
+- `--useimg-0` (explicit zero) forces no embed even in autonomous mode (overrides the autonomous default of 2).
+
+**Example composed invocations:**
 
 ```
-/houdini --nogen                            — guided default, no image gen
-/houdini "fintech, dark" --nogen            — keywords mode, no image gen
-/houdini --auto wildcard --nogen            — autonomous, no image gen
+/houdini --nogen                                — guided default, no image gen
+/houdini "fintech, dark" --nogen                — keywords mode, no image gen
+/houdini --auto wildcard --nogen                — autonomous, no image gen
+/houdini "fintech, dark" --useimg-2 --gen-4     — keywords, gen 4, embed up to 2
+/houdini --auto --useimg-3 --gen-5              — autonomous, gen 5, embed up to 3
+/houdini --auto --useimg-0                      — autonomous, FORCE no embed
+/houdini a CRM for plumbers --useimg --gen      — guided, defaults (gen 3, embed 2)
 ```
 
-**When to use `--nogen`:**
+**When to use each modifier:**
 
-- You've hit Gemini's image-gen quota and want to keep designing.
-- You want faster iteration (skip ~15s of mood-board generation).
-- Imagery isn't yet relevant for this exploration.
-- Cost-sensitive batch runs.
+- `--nogen`: Gemini quota exhausted, fast iteration (~15s saved), text-only exploration, cost-sensitive batch runs.
+- `--gen-N`: you want richer mood input (4-5 images) or a leaner one (1-2) than the default 3.
+- `--useimg-N`: you want the drafter to actually USE mood images as app content (e.g. for a portfolio, gallery, or content-app that benefits from inline imagery). Always allowed in autonomous mode; explicit in keywords/guided.
 
 **When to use each mode:**
 
@@ -91,9 +107,23 @@ B. ARGS DO NOT SPECIFY A MODE — args are empty OR look sentence-shaped (a brie
        (Plus "Other" auto-added.)
    - Honor the user's pick. If KEYWORDS, follow up with a free-text AskUserQuestion for the keyword list, then re-run detection with the new args so the rest of TUNE IN treats them as if they had been passed in originally.
 
-Once the mode is resolved (either by args or by the question above), continue with Step 1.
+Once the mode is resolved (either by args or by the question above), continue with Step 0.5.
 
-**Step 1 — Branch by mode.** With the mode now known, branch into the mode-specific TUNE IN content below. The detected mode determines how the rest of TUNE IN runs.
+### Step 0.5 — Scan the seed directory for user-provided resources
+
+Before forming the Design Read, list `$PROJECT_ROOT/seeds/` via Bash: `ls -1 "$PROJECT_ROOT/seeds" 2>/dev/null`. Identify USER-PROVIDED files: any file whose name does NOT match the workflow-owned patterns `mood-[1-5].png`, `draft-[1-5].html`, `starter.html`, `tokens.css`, `.gitkeep`. The remainder are user refs (e.g. `inspiration.jpg`, `brand-cover.png`, `screenshot-of-rival.png`, `refs/`).
+
+There is NO quantity cap on user refs — list everything that's there.
+
+What to do with the findings:
+- **None present** → proceed as usual; the MoodBoard workflow will generate from nanogen if not `--nogen`.
+- **One or more present** → mention them in the Design Read hypothesis as anchoring inputs. They will be auto-picked up by the workflow's MoodBoard phase (which scans seed_dir itself and decides replace/augment based on flags). Tell the user briefly: "Found N user-provided seed resource(s); they'll anchor the mood board."
+
+This scan runs in ALL modes (autonomous, keywords, guided). It is read-only and never blocks.
+
+### Step 1 — Branch by mode
+
+With the mode now known, branch into the mode-specific TUNE IN content below. The detected mode determines how the rest of TUNE IN runs.
 
 **If AUTONOMOUS mode:**
 
@@ -133,25 +163,28 @@ Output of this phase, held in your head and passed to the workflow: `{ brief, de
 
 ### Phase 2 — DRAFT
 
-1. Make sure `presto/seeds/` exists. Create it via Bash if not.
-2. Invoke the workflow at `presto/workflows/houdini.js` with mode-specific args:
+1. The command preamble has already created `$PROJECT_ROOT/seeds/` and resolved `$PROJECT_ROOT` + `$RUN_SLUG`. Take both as given.
+2. Invoke the workflow at `presto/workflows/houdini.js` with mode-specific args. **Every invocation must include `project_root: "$PROJECT_ROOT"` and `run_slug: "$RUN_SLUG"`** alongside the mode-specific fields. The workflow uses both to compute all read/write paths (no hardcoded plugin paths).
 
    **AUTONOMOUS** — one draft, the chosen angle, no user in the loop:
    ```
-   { brief, design_read, constraints, autonomous: true, n_drafts: 1, angle_override: chosen_angle }
+   { brief, design_read, constraints, autonomous: true, n_drafts: 1, angle_override: chosen_angle,
+     project_root, run_slug }
    ```
-   The workflow generates exactly ONE draft at `presto/seeds/draft-1.html` using `chosen_angle` (default `wildcard`).
+   The workflow generates exactly ONE draft at `$PROJECT_ROOT/seeds/draft-1.html` using `chosen_angle` (default `wildcard`).
 
    **KEYWORDS** — three drafts, keywords threaded into each drafter:
    ```
-   { brief, design_read, constraints, keywords: [...] }
+   { brief, design_read, constraints, keywords: [...], project_root, run_slug }
    ```
    Three drafts as usual. The workflow passes the classified keywords into each drafter's prompt as a primary signal alongside the angle.
 
    **GUIDED** — three drafts, original behavior:
    ```
-   { brief, design_read, constraints, n_drafts: 3 }
+   { brief, design_read, constraints, n_drafts: 3, project_root, run_slug }
    ```
+
+   For any mode, also pass through the modifier flags if set: `skip_image_gen`, `mood_board_count`, `embed_images`.
 
 3. In the multi-draft modes (KEYWORDS / GUIDED), the workflow fans out 3 drafter subagents concurrently. Each writes one self-contained HTML file: `presto/seeds/draft-1.html`, `draft-2.html`, `draft-3.html`. Each file is 200-400 lines, opens in a browser as-is, and contains a real palette in OKLCH, a real type system, a real hero, and 2-4 real component sections.
 4. The three angles are fixed (and `angle_override` in autonomous mode picks one of them):
@@ -204,6 +237,7 @@ Output of this phase, held in your head and passed to the workflow: `{ brief, de
    - `## Mode` — one of `autonomous`, `keywords`, `guided`. In autonomous mode, append the note: "Generated in autonomous mode, no user iteration. Angle: <chosen_angle>." In keywords mode, list the classified keywords. In guided mode, just state the mode name.
    - `## Scene sentence` — the chosen draft's one-liner.
    - `## Direction name` — the chosen draft's short name.
+   - `## Embedded mood images` — relative paths (e.g. `- mood-1.png`) of any mood images the chosen draft actually embedded as `<img>` tags in the markup. Pull from the draft's `embedded_mood_images` metadata field. If none were embedded, write `- (none — drafter chose not to embed any mood image; /magic Build is free to author imagery from scratch)`. Include a leading line: "These relative paths appear as <img src=\"...\"> in starter.html and MUST be preserved by downstream /magic Build (do not strip; if rewriting the surface they live on, keep the <img> tag in place)."
    - `## Palette (OKLCH)` — table of role -> OKLCH value -> hex fallback.
    - `## Type` — display family, body family, weights used, scale.
    - `## Dials` — inferred VARIANCE / MOTION / DENSITY values (0-100) with one-line justification each.
@@ -259,6 +293,20 @@ Each drafter agent already has these baked in, but verify on hand-off:
 | AUTONOMOUS       | Same flow, MoodBoard phase skipped. Single drafter gets empty `visual_direction_summary` and `mood_board: []`.       |
 | KEYWORDS         | Same flow, MoodBoard phase skipped. All three drafters get empty visual direction; keywords + design_read carry it.  |
 | GUIDED           | Same flow, MoodBoard phase skipped. All three drafters get empty visual direction; brief + design_read carry it.     |
+
+### Modifier: `--gen[-N]` (mood_board_count=N, default 3, cap 1-5)
+
+| Mode + `--gen-N` | What changes vs the base mode                                                                                                |
+|------------------|------------------------------------------------------------------------------------------------------------------------------|
+| ALL modes        | MoodBoard authors EXACTLY N prompts across an ordered vantage list (hero / lifestyle / detail / atmosphere / texture-fragment, in that order). Writes `seeds/mood-1.png` through `seeds/mood-N.png`. N=1 keeps only hero; N=5 uses all five vantages. |
+
+### Modifier: `--useimg[-N]` (embed_images=N, defaults: autonomous→2, others→0)
+
+| Mode + `--useimg-N` | What changes vs the base mode                                                                                            |
+|---------------------|--------------------------------------------------------------------------------------------------------------------------|
+| ALL modes           | Drafter prompt receives explicit `EMBED PERMISSION: you may embed up to N mood images …`. Drafter MAY (not must) place `<img src="mood-K.png">` tags using relative paths. When the drafter does embed, the HAND-OFF phase writes the embedded relative paths into `## Embedded mood images` in `DESIGN_APPROACH.md` so downstream `/magic` Build preserves them. |
+| AUTONOMOUS (default)| N=2 by default — autonomous mode is the only place useimg is implicit. Pass `--useimg-0` to force no embed.              |
+| KEYWORDS / GUIDED   | N=0 by default — useimg must be explicit. Useful when the app is image-centric (gallery, portfolio, content app).        |
 
 ## Anti-patterns
 

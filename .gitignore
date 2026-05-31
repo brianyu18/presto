@@ -4,6 +4,7 @@ memory/*
 seeds/draft-*.html
 seeds/starter.html
 seeds/tokens.css
+seeds/mood-*.png
 !seeds/.gitkeep
 !seeds/README.md
 

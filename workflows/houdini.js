@@ -135,7 +135,7 @@ const MOOD_BOARD_SCHEMA = {
 
 const DRAFT_METADATA_SCHEMA = {
   type: 'object',
-  required: ['name', 'angle', 'scene_sentence', 'palette_oklch', 'type_pair', 'motion_tone', 'references', 'anti_references', 'draft_file_path', 'summary_under_60_words'],
+  required: ['name', 'angle', 'scene_sentence', 'palette_oklch', 'type_pair', 'motion_tone', 'references', 'anti_references', 'draft_file_path', 'summary_under_60_words', 'embedded_mood_images'],
   properties: {
     name: { type: 'string', description: 'Short evocative name for this draft, e.g. "Quiet Catalogue" or "Neon Brutalist".' },
     angle: { type: 'string', description: 'The starting angle this draft was asked to take (safe brand-default / anti-default contrarian / wildcard overcommit, or a custom angle passed by the skill).' },
@@ -191,6 +191,11 @@ const DRAFT_METADATA_SCHEMA = {
     },
     draft_file_path: { type: 'string', description: 'Absolute path to the written draft HTML file under presto/seeds/.' },
     summary_under_60_words: { type: 'string', maxLength: 480 },
+    embedded_mood_images: {
+      type: 'array',
+      description: 'Relative paths (filename only, e.g. "mood-1.png") of mood images the drafter actually embedded as <img> tags in the HTML. MUST be exactly the set referenced in the markup — used by HAND-OFF to record preserved imagery in DESIGN_APPROACH.md. Empty array if no embeds.',
+      items: { type: 'string', pattern: '^mood-[1-5]\\.png$' },
+    },
   },
 };
 
@@ -224,10 +229,23 @@ const ANGLE_OVERRIDE_MAP = {
   wildcard: 'wildcard overcommit',
 };
 
-const SEEDS_DIR = '/Users/brian/Desktop/claude-projects/presto/seeds';
-const STARTER_PATH = '/Users/brian/Desktop/claude-projects/presto/seeds/starter.html';
-const TOKENS_PATH = '/Users/brian/Desktop/claude-projects/presto/seeds/tokens.css';
-const DESIGN_APPROACH_PATH = '/Users/brian/Desktop/claude-projects/presto/memory/DESIGN_APPROACH.md';
+// Path resolver. project_root is passed by the command markdown; falls back to the
+// presto repo root (inlined) for ad-hoc Workflow tool invocations that omit it.
+// Note: keep this a function declaration (hoisted) with the fallback INLINED — the
+// workflow body above runs in source order and would TDZ-error against any top-level
+// `const` referenced from inside the function.
+function resolvePaths(projectRoot) {
+  const fallback = '/Users/brian/Desktop/claude-projects/presto';
+  const root = (typeof projectRoot === 'string' && projectRoot.length > 0) ? projectRoot : fallback;
+  return {
+    projectRoot: root,
+    seedsDir: `${root}/seeds`,
+    memoryDir: `${root}/memory`,
+    starterPath: `${root}/seeds/starter.html`,
+    tokensPath: `${root}/seeds/tokens.css`,
+    designApproachPath: `${root}/memory/DESIGN_APPROACH.md`,
+  };
+}
 
 const DRAFT_RULES = [
   'OKLCH for all color values. No hex. No rgb. No hsl. Put colors on :root as custom properties (--ink, --paper, --accent, etc.).',
@@ -239,12 +257,23 @@ const DRAFT_RULES = [
   'Structure: <head> with viewport + title + a single <style> block; <body> with a real hero + 2 to 3 distinct sections (e.g. feature triad, manifesto column, gallery, pricing strip, FAQ, footer). The sections should NOT all be 3-up card grids; vary the rhythm.',
   'Self-contained: openable as a single file. System-font fallbacks acceptable; if you specify a Google font in CSS, include the @import at the top of the <style> block.',
   'Accessibility: real heading order (one h1, then h2s), buttons are <button>, links are <a>, contrast meets WCAG AA against the chosen --paper / --ink.',
-  'Imagery policy: do NOT embed mood-board images in your HTML. The mood board you receive is pure inspiration — translate it into palette, type, composition, and copy. If your draft genuinely needs imagery, use picsum.photos with a deterministic seed (e.g. https://picsum.photos/seed/draft-N-hero/1600/900) or commit to a pure-CSS/typography solution. Never insert <img src="file://..."> pointing at the mood-board paths.',
+  'Imagery policy (driven by EMBED PERMISSION line in your prompt — read it carefully): your prompt tells you EXACTLY how many mood images you may embed (zero or a positive integer N). When N=0, do NOT insert any <img> tag pointing at mood-K.png — period. When N>0, you MAY embed up to N of the available mood images as real app content IF they read as on-brand assets the user would expect inside the running product (e.g. stippled dog medallions in a dog field-guide app, lookbook plates in a fashion shop). Use RELATIVE paths only: <img src="mood-1.png" alt="..."> (no leading slash, no file://, no http). Draft, mood, and the eventual starter all sit in presto/seeds/, so relatives resolve. Embed SPARINGLY — palette/type/composition should still carry most of the world; embedding is for cases where the mood image IS the asset, not as decoration. Always: return the actual relative paths you embedded in the "embedded_mood_images" array of your JSON metadata (e.g. ["mood-1.png", "mood-3.png"]); empty array if you embedded none. If you need imagery beyond the mood board, use picsum.photos with a deterministic seed (https://picsum.photos/seed/draft-N-hero/1600/900) or commit to pure-CSS/typography/SVG. NEVER <img src="file:///absolute/path"> — relative paths only.',
 ];
 
 // ---------- Workflow body ----------
+// Top-level procedural body. The Workflow runtime injects { args, agent, phase,
+// parallel, log } as globals — do NOT wrap in `export default async function`;
+// Claude Code's workflow loader strips the meta export and compiles the
+// remaining body in a vm context that does NOT support module-level exports.
 
-export default async function houdiniDrafts({ args, agent, phase, parallel, log }) {
+  // Resolve project-relative paths once per run. project_root is passed by the
+  // command markdown; falls back to DEFAULT_PROJECT_ROOT for ad-hoc Workflow tool calls.
+  const PATHS = resolvePaths(args?.project_root);
+  const SEEDS_DIR = PATHS.seedsDir;
+  const STARTER_PATH = PATHS.starterPath;
+  const TOKENS_PATH = PATHS.tokensPath;
+  const DESIGN_APPROACH_PATH = PATHS.designApproachPath;
+
   const brief = args?.brief ?? '';
   const designRead = args?.design_read ?? '';
   const constraints = args?.constraints ?? '';
@@ -257,6 +286,46 @@ export default async function houdiniDrafts({ args, agent, phase, parallel, log 
 
   // Resolve mode for downstream tooling (DESIGN_APPROACH.md, /magic).
   const mode = autonomous ? 'autonomous' : (hasKeywords ? 'keywords' : 'guided');
+
+  // ---------- Flag resolution: mood_board_count + embed_images ----------
+  // Tracks whether each was explicit so we know when to auto-bump vs warn.
+  const moodCountExplicit = Number.isInteger(args?.mood_board_count);
+  const embedExplicit = Number.isInteger(args?.embed_images);
+
+  let moodCount = moodCountExplicit ? args.mood_board_count : 3;
+  if (moodCount < 1) moodCount = 1;
+  if (moodCount > 5) {
+    log(`WARN: --gen ${moodCount} exceeds cap of 5; clamping to 5.`);
+    moodCount = 5;
+  }
+
+  // embed_images default: autonomous → 2, else → 0. Explicit value (incl. 0) wins.
+  let embedCount = embedExplicit ? args.embed_images : (autonomous ? 2 : 0);
+  if (embedCount < 0) embedCount = 0;
+
+  // Safety A: --nogen wins over --useimg.
+  if (skipImageGen && embedCount > 0) {
+    log(`WARN: --useimg ${embedCount} ignored because --nogen is set (no images to embed).`);
+    embedCount = 0;
+  }
+
+  // Safety B: useimg > generated count.
+  if (!skipImageGen && embedCount > moodCount) {
+    if (!moodCountExplicit) {
+      // Implicit underspec: silently auto-bump mood_board_count to match (capped at 5).
+      const bumped = Math.min(5, embedCount);
+      log(`note: --useimg ${embedCount} > default --gen 3; auto-bumping mood_board_count to ${bumped}.`);
+      if (embedCount > 5) {
+        log(`WARN: --useimg ${embedCount} exceeds cap of 5; clamping to 5.`);
+        embedCount = 5;
+      }
+      moodCount = bumped;
+    } else {
+      // Both explicit and conflicting: clamp useimg + emit visible WARN.
+      log(`WARN: --useimg ${embedCount} > --gen ${moodCount}; clamping useimg to ${moodCount}. (run continues)`);
+      embedCount = moodCount;
+    }
+  }
 
   // n_drafts: autonomous mode forces 1; otherwise honor caller (default 3).
   const requestedN = Number.isInteger(args?.n_drafts) ? args.n_drafts : 3;
@@ -334,7 +403,7 @@ export default async function houdiniDrafts({ args, agent, phase, parallel, log 
         : `MODE SIGNAL: guided (no visual_brief supplied). Derive the three mood prompts from the brief + design_read + directives below.\n`;
 
   const moodPrompt =
-    `OWNER: imagen-direction + impeccable. Produce a 3-image mood board to anchor the drafters that run next. These images are PURE INSPIRATION — they are NEVER embedded into the draft HTML. They exist so the drafters can read a concrete visual world and translate it into palette, typography, composition, and copy.\n` +
+    `OWNER: imagen-direction + impeccable. Produce a mood board to anchor the drafters that run next. The mood board can come from THREE sources, in priority order: (1) user-provided resources already sitting in the seeds directory; (2) nanogen-generated images via the MCP; (3) prose-only fallback when neither is available.\n` +
     `\n` +
     moodSignalBlock +
     `\n` +
@@ -344,24 +413,45 @@ export default async function houdiniDrafts({ args, agent, phase, parallel, log 
     `Art-direction directives (one per angle): ${JSON.stringify(perAngleDirectives)}\n` +
     `Shared constraints: ${JSON.stringify(sharedConstraints)}\n` +
     `\n` +
-    `STEP 1. Load the nanogen tool schemas. Call ToolSearch with the query:\n` +
+    `Flags resolved by the workflow (do NOT override):\n` +
+    `  mood_board_count requested: ${moodCount}\n` +
+    `  mood_board_count was explicit (--gen): ${moodCountExplicit}\n` +
+    `  skip_image_gen (--nogen): ${skipImageGen}\n` +
+    `\n` +
+    `STEP 0 — SEED SCAN (do this BEFORE any tool work).\n` +
+    `Use Bash to list ${SEEDS_DIR}: \`ls -1 ${SEEDS_DIR} 2>/dev/null\`. From the output, identify USER-PROVIDED files: any file whose name does NOT match these workflow-owned patterns — mood-1.png through mood-5.png, draft-1.html through draft-5.html, starter.html, tokens.css. The remainder (e.g. brand-logo.svg, inspiration.jpg, screenshot-of-rival.png, ref-cover.png, refs/, brand/) are USER REFS. Any quantity is valid — do not cap or filter by count. If a refs/ or brand/ subdirectory exists, ls it too and include the image files inside.\n` +
+    `\n` +
+    `STEP 0b — DECIDE THE MOOD-BOARD STRATEGY based on what STEP 0 found and the flags above:\n` +
+    `  A. NO user refs AND skip_image_gen=true → BAIL: return mood_board: [], visual_direction_summary derived from brief + directives alone. Skip steps 1-5.\n` +
+    `  B. NO user refs AND skip_image_gen=false → PURE GENERATE: run nanogen steps 1-5 to produce ${moodCount} mood images (this is the original behavior).\n` +
+    `  C. User refs PRESENT AND skip_image_gen=true → REFS ONLY: run STEP 4-describe on the user-ref files (no generate), compose visual_direction_summary from their describe output. Skip steps 1-3 (nothing to generate).\n` +
+    `  D. User refs PRESENT AND skip_image_gen=false AND mood_board_count was NOT explicit → REPLACE (default): treat user refs as the mood board. Run STEP 4-describe on each user ref. Skip generation. visual_direction_summary draws from the describe output.\n` +
+    `  E. User refs PRESENT AND mood_board_count WAS explicit (--gen-N passed) → AUGMENT: run STEP 4-describe on user refs (treat as moods 1..K where K = user-ref count), THEN run STEP 2-3-4-generate for ${moodCount} ADDITIONAL prompts that EXPLICITLY REFERENCE the user inputs (palette echo, composition echo, material echo). Final mood_board contains both: user refs first, generated last.\n` +
+    `Log which path you took (A/B/C/D/E) as the first line of your output reasoning before the JSON.\n` +
+    `\n` +
+    `STEP 1. Load the nanogen tool schemas (only needed for paths B, C, D, E). Call ToolSearch with the query:\n` +
     `  "select:mcp__plugin_presto_nanogen__generate,mcp__plugin_presto_nanogen__describe"\n` +
     `You CANNOT invoke the tools until their schemas are loaded — calling without ToolSearch first will fail with InputValidationError.\n` +
     `\n` +
-    `STEP 2. Author EXACTLY 3 prompts spanning three distinct vantage points on the SAME visual world:\n` +
-    `  (a) hero-mood — a dominant scene that establishes the world (16:9, output_path: ${SEEDS_DIR}/mood-1.png)\n` +
-    `  (b) lifestyle-mood — the use context: someone or something using/inhabiting the product space (3:2, output_path: ${SEEDS_DIR}/mood-2.png)\n` +
-    `  (c) detail-mood — close-up material, texture, or surface (1:1, output_path: ${SEEDS_DIR}/mood-3.png)\n` +
+    `STEP 2. Author EXACTLY ${moodCount} prompt(s) spanning the FIRST ${moodCount} vantage(s) from this ordered list (do NOT skip earlier vantages — N=1 means only hero, N=5 means all five in order):\n` +
+    `  (a) hero-mood — a dominant scene that establishes the world (aspect 16:9, output_path: ${SEEDS_DIR}/mood-1.png)\n` +
+    `  (b) lifestyle-mood — the use context: someone or something using/inhabiting the product space (aspect 3:2, output_path: ${SEEDS_DIR}/mood-2.png)\n` +
+    `  (c) detail-mood — close-up material, texture, or surface from the world (aspect 1:1, output_path: ${SEEDS_DIR}/mood-3.png)\n` +
+    `  (d) atmosphere-mood — environment/negative-space wide shot conveying mood without showing the subject directly (aspect 16:9, output_path: ${SEEDS_DIR}/mood-4.png)\n` +
+    `  (e) texture-fragment — extreme macro of a single material/surface motif used in the world (aspect 1:1, output_path: ${SEEDS_DIR}/mood-5.png)\n` +
     `\n` +
     `STEP 3. Each prompt is 1-3 sentences. NOT an essay. Structure: [media + light specifics]. [subject + composition + cropping]. [palette in OKLCH]. End with: "No text in image, no logos, no watermarks."\n` +
     `\n` +
     `ANTI-SLOP (enforced with force): BANNED anchor words — "epic", "cinematic", "dreamy", "vibrant", "stunning", "8k", "ultra-detailed", "hyperrealistic", "golden hour" (specify light direction instead), "bokeh" (unless lens-justified). BANNED compositions — centered subject, symmetric three-quarter portrait, hero object on clean gradient, floating product on white seamless. REQUIRED patterns — editorial off-center framing, harsh window light from a specified direction, specific media (35mm grain, scanned slide film, medium-format Portra 400, risograph two-color, cyanotype), edge-of-frame cropping, brand palette dominant and named in OKLCH.\n` +
     `\n` +
-    `STEP 4. For each of the 3 prompts: call mcp__plugin_presto_nanogen__generate with the prompt + aspect_ratio + output_path. Then call mcp__plugin_presto_nanogen__describe on the returned path to extract structured palette_oklch values and style_tags. Use the path RETURNED by the tool, not the path you requested.\n` +
+    `STEP 4. Image work — varies by path from STEP 0b:\n` +
+    `  Paths B/E (generate): for each prompt authored in step 2, call mcp__plugin_presto_nanogen__generate with the prompt + aspect_ratio + output_path. Then call mcp__plugin_presto_nanogen__describe on the RETURNED path.\n` +
+    `  Paths C/D (refs only / replace): for each user-ref file from STEP 0, call mcp__plugin_presto_nanogen__describe on it (no generate). The describe output supplies palette_oklch + style_tags. In the mood_board entry, set path = the user ref's absolute path, prompt_used = "user-provided reference: <filename>".\n` +
+    `  Path E (augment): do BOTH — describe all user refs first (they become moods 1..K), then generate ${moodCount} additional and describe each (moods K+1..K+${moodCount}).\n` +
     `\n` +
-    `STEP 5. Compose visual_direction_summary — 2-4 sentences of prose that captures the through-line of the three images: the world, the light, the material, the palette, the feeling. The drafters in the next phase will use this as their primary anchor.\n` +
+    `STEP 5. Compose visual_direction_summary — 2-4 sentences of prose that captures the through-line of the FINAL mood board (whatever ended up in it): the world, the light, the material, the palette, the feeling. The drafters in the next phase will use this as their primary anchor. When user refs drove the board, name explicitly that the direction inherits from user-provided imagery.\n` +
     `\n` +
-    `FALLBACK: if ToolSearch fails, if generate returns an error (no GEMINI_API_KEY, quota/rate-limit, MCP server unreachable, malformed response), or if describe fails — DO NOT block the workflow. Return mood_board as an empty array [] and put the entire direction into visual_direction_summary as a rich text-only description of what the three mood images WOULD have shown (hero-mood, lifestyle-mood, detail-mood). The drafters can work from prose alone.\n` +
+    `FALLBACK: if ToolSearch fails, if generate returns an error (no GEMINI_API_KEY, quota/rate-limit, MCP server unreachable, malformed response), or if describe fails — DO NOT block the workflow. Return mood_board as an empty array [] and put the entire direction into visual_direction_summary as a rich text-only description of what the mood board WOULD have shown (in vantage order: hero, lifestyle, detail, atmosphere, texture-fragment — only the first ${moodCount}). When user refs were present but describe failed, still list their filenames and a prose description of each based on the filename + brief alone. The drafters can work from prose alone.\n` +
     `\n` +
     `Return ONLY the JSON object matching the schema.`;
 
@@ -386,7 +476,13 @@ export default async function houdiniDrafts({ args, agent, phase, parallel, log 
     if (skipImageGen && moodImages.length === 0 && !visualDirectionSummary) {
       return `VISUAL DIRECTION: (no mood board this run — image generation was skipped via --nogen. Anchor your draft entirely in the brief, design_read, and your assigned creative directive below.)\n`;
     }
-    const header = `VISUAL DIRECTION (anchor your draft in this mood — do NOT embed these images in HTML; they are pure inspiration):\n`;
+    // Effective embed cap = min(embedCount, actual generated count). Belt-and-suspenders
+    // against post-MoodBoard partial failure (e.g. 5 requested, 3 succeeded → cap at 3).
+    const effectiveEmbed = Math.min(embedCount, moodImages.length);
+    const embedPermission = effectiveEmbed > 0
+      ? `EMBED PERMISSION: you MAY embed UP TO ${effectiveEmbed} of these mood image(s) directly in the HTML if they read as on-brand assets the user would expect inside the running product (e.g. for a dog field-guide app, stippled dog medallions ARE the kind of imagery the app needs). Use RELATIVE paths only: <img src="mood-1.png" alt="..."> — draft, mood, and final starter all sit in presto/seeds/. Embed sparingly; the visual world should still come mostly through palette/type/composition. ${autonomous ? 'AUTONOMOUS mode — your draft becomes the starter directly, so embeds are preserved.' : `${mode.toUpperCase()} mode with explicit --useimg — the HAND-OFF will record your embedded paths in DESIGN_APPROACH.md so downstream /magic Build preserves them.`} After writing the draft, you MUST return the actual relative paths you embedded in the metadata field "embedded_mood_images" (e.g. ["mood-1.png", "mood-3.png"]) — empty array [] if you chose to embed none.`
+      : `EMBED PERMISSION: do NOT embed any of these mood images. They are pure inspiration; translate to palette, type, composition, and copy only. Return "embedded_mood_images": [] in your metadata.`;
+    const header = `VISUAL DIRECTION (anchor your draft in this mood):\n  ${embedPermission}\n`;
     const summaryLine = visualDirectionSummary
       ? `  Visual direction summary (DOMINANT signal): ${JSON.stringify(visualDirectionSummary)}\n`
       : `  Visual direction summary: (none provided — derive from brief + directive)\n`;
@@ -395,10 +491,11 @@ export default async function houdiniDrafts({ args, agent, phase, parallel, log 
     }
     const imageLines = moodImages.map((m, i) => {
       const path = typeof m?.path === 'string' ? m.path : '';
+      const relPath = path ? path.split('/').pop() : '';
       const desc = typeof m?.description === 'string' ? m.description : '';
       const palette = Array.isArray(m?.palette_oklch) ? m.palette_oklch.join(', ') : '';
       const tags = Array.isArray(m?.style_tags) ? m.style_tags.join(', ') : '';
-      return `  Mood ${i + 1}: ${path}\n` +
+      return `  Mood ${i + 1}: ${path}${relPath ? `  (relative: ${relPath})` : ''}\n` +
              `    description: ${JSON.stringify(desc)}\n` +
              `    palette (OKLCH): ${palette}\n` +
              `    style tags: ${tags}\n`;
@@ -448,7 +545,7 @@ export default async function houdiniDrafts({ args, agent, phase, parallel, log 
         `STRICT RULES every draft must follow:\n` +
         `${draftRulesBlock}\n` +
         `\n` +
-        `STEP 2. After writing, return the JSON metadata object. draft_file_path MUST equal the exact path you wrote to (${draftPath}). scene_sentence must follow the impeccable form: "Reading this as: <kind> for <audience>, with a <vibe> language, leaning toward <aesthetic family>." summary_under_60_words must describe what a user would see when they open this file — the hero, the dominant move, the feeling — not a list of features.\n` +
+        `STEP 2. After writing, return the JSON metadata object. draft_file_path MUST equal the exact path you wrote to (${draftPath}). scene_sentence must follow the impeccable form: "Reading this as: <kind> for <audience>, with a <vibe> language, leaning toward <aesthetic family>." summary_under_60_words must describe what a user would see when they open this file — the hero, the dominant move, the feeling — not a list of features. embedded_mood_images MUST be the array of relative paths (e.g. ["mood-1.png", "mood-3.png"]) that actually appear as <img src="..."> in the markup you wrote — exactly those, no more, no fewer; empty array [] if you embedded none.\n` +
         `\n` +
         `Return ONLY the JSON object matching the schema.`,
       schema: DRAFT_METADATA_SCHEMA,
@@ -506,6 +603,14 @@ export default async function houdiniDrafts({ args, agent, phase, parallel, log 
         }).join('\n')
       : '- (no mood images generated — see Visual direction summary below)';
 
+    // Embedded paths the drafter actually used — load-bearing for /magic Build preservation.
+    const embeddedPaths = Array.isArray(draft?.embedded_mood_images)
+      ? draft.embedded_mood_images.filter((p) => typeof p === 'string' && /^mood-[1-5]\.png$/.test(p))
+      : [];
+    const embeddedBullets = embeddedPaths.length > 0
+      ? embeddedPaths.map((p) => `- ${p}`).join('\n')
+      : '- (none — drafter chose not to embed any mood image; /magic Build is free to author imagery from scratch)';
+
     const handoffPrompt =
       `OWNER: houdini autonomous hand-off. You are NOT making creative decisions — you are persisting the lone autonomous draft as the project's starter so that the /magic workflow's next run sees a real DESIGN_APPROACH.md and proceeds past its cold-start gate.\n` +
       `\n` +
@@ -544,6 +649,10 @@ export default async function houdiniDrafts({ args, agent, phase, parallel, log 
       `\n` +
       `## Mood board\n` +
       `${moodBoardBullets}\n` +
+      `\n` +
+      `## Embedded mood images\n` +
+      `These relative paths appear as <img src="..."> in starter.html and MUST be preserved by downstream /magic Build (do not strip; if rewriting the surface they live on, keep the <img> tag in place):\n` +
+      `${embeddedBullets}\n` +
       `\n` +
       `## Palette (OKLCH)\n` +
       `${paletteBullets}\n` +
@@ -584,4 +693,3 @@ export default async function houdiniDrafts({ args, agent, phase, parallel, log 
   }
 
   return { mode, directive, moodBoard, drafts };
-}
