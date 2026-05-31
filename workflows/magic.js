@@ -276,6 +276,9 @@ export default async function magic({ args, agent, phase, pipeline, parallel, wo
       `  - eyebrows: taste's mechanical count is the operational rule.\n` +
       `  - sans defaults: avoid Inter unless explicitly justified.\n` +
       `  - animation altitude: taste picks the pattern (sticky stack, horizontal pan); emil picks values in next phase.\n` +
+      `\n` +
+      `Note: presto/memory/DESIGN_APPROACH.md (if present from a prior /houdini run) may reference mood-board images for palette and visual-direction guidance. Treat those as READ-ONLY context — do NOT call nanogen or any image-generation MCP here. BUILD does not generate images.\n` +
+      `\n` +
       `Write list of files_written and brief notes to presto/memory/BUILD.json using your Write tool.`;
 
     build = await pipeline(

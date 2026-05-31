@@ -13,17 +13,18 @@
  *
  *   The skill calls this workflow once, between TUNE IN and PRESENT.
  *
- * ARGS CONTRACT (v2.1)
+ * ARGS CONTRACT (v2.2)
  *   { brief, design_read, constraints, n_drafts?, angles?,
  *     autonomous?: boolean,       // MODE 1 — single draft, no per-angle expansion
  *     keywords?: string[],        // MODE 2 — primary design signal for every drafter
+ *     visual_brief?: string,      // MODE 3 (guided) — primary signal for mood board
  *     angle_override?: 'safe'|'contrarian'|'wildcard' }  // autonomous only
  *
  * MODES: autonomous forces n_drafts=1 + single angle from angle_override
  * (default 'wildcard'). keywords runs the 3-up flow with the keywords as a
  * primary signal equal in weight to the brief. guided is unchanged from v2.
  *
- * RETURN: { mode: 'autonomous'|'keywords'|'guided', directive, drafts: [...] }
+ * RETURN: { mode, directive, moodBoard, drafts: [...] }
  *
  * WHY DRAFTS, NOT DESCRIPTIONS
  *   The hardest moment in design work is the blank page. The fix, per
@@ -33,20 +34,23 @@
  *   to INVENT, and the invention has to be a real, openable file — not an
  *   abstract write-up.
  *
- * ART-DIRECTION FIRST, THEN PARALLEL DRAFTING
- *   A short Brief phase produces a single "creative directive" per angle,
- *   so the parallel drafters do not collide on the same default. Then the
- *   Draft phase fans out, writing draft-1.html, draft-2.html, draft-3.html.
+ * ART-DIRECTION FIRST, THEN MOOD BOARD, THEN PARALLEL DRAFTING
+ *   A short Brief phase produces a single "creative directive" per angle.
+ *   A MoodBoard phase then renders 3 inspirational images via nanogen MCP —
+ *   pure inspiration, never embedded into drafter HTML. Then the Draft
+ *   phase fans out, writing draft-1.html, draft-2.html, draft-3.html with
+ *   the mood board piped in as a visual anchor.
  *
  * CONDITIONAL HAND-OFF (autonomous only)
  *   In guided/keywords modes the /houdini SKILL drives the user through
  *   PRESENT → REFINE → HAND-OFF conversationally. In autonomous mode there
  *   is no skill loop — the workflow is running solo (typically via
- *   /magic --surprise). So a third Handoff phase fires ONLY when
+ *   /magic --surprise). So a final Handoff phase fires ONLY when
  *   autonomous === true: it copies the lone draft to seeds/starter.html,
  *   extracts :root tokens to seeds/tokens.css, and writes
- *   memory/DESIGN_APPROACH.md so the /magic workflow's phase-0 cold-start
- *   detector sees a real approach on its next run and proceeds to Read.
+ *   memory/DESIGN_APPROACH.md (including the mood-board paths) so the
+ *   /magic workflow's phase-0 cold-start detector sees a real approach on
+ *   its next run and proceeds to Read.
  *
  * RULES BAKED INTO EVERY DRAFT
  *   - OKLCH for color only (no hex, no rgb).
@@ -68,6 +72,7 @@ export const meta = {
   description: 'Generate drafted starter templates for the houdini skill. 3 concurrent drafts in guided/keyword modes; 1 draft in autonomous mode.',
   phases: [
     { title: 'Brief' },
+    { title: 'MoodBoard' },
     { title: 'Draft' },
     { title: 'Handoff' },
   ],
@@ -92,6 +97,38 @@ const DIRECTIVE_SCHEMA = {
     shared_constraints: {
       type: 'array',
       items: { type: 'string', description: 'Constraints every drafter must respect (accessibility, regulated industry, audience reading-age, brand non-negotiables, etc.).' },
+    },
+  },
+};
+
+const MOOD_BOARD_SCHEMA = {
+  type: 'object',
+  required: ['mood_board', 'visual_direction_summary'],
+  properties: {
+    mood_board: {
+      type: 'array',
+      description: 'Up to 3 mood images. Empty if nanogen unavailable; the visual_direction_summary still carries the direction.',
+      items: {
+        type: 'object',
+        required: ['path', 'prompt_used', 'description', 'palette_oklch', 'style_tags'],
+        properties: {
+          path: { type: 'string', description: 'Absolute path to the written PNG, or empty string if the image could not be generated.' },
+          prompt_used: { type: 'string', description: 'The actual prompt sent to nanogen (1-3 sentences, anti-slop).' },
+          description: { type: 'string', description: 'Structured description of the image — what is in it, the dominant move, why it anchors the direction.' },
+          palette_oklch: {
+            type: 'array',
+            items: { type: 'string', description: 'oklch(...) value lifted from describe output, one entry per dominant color.' },
+          },
+          style_tags: {
+            type: 'array',
+            items: { type: 'string', description: 'Short structured tags from describe — e.g. "35mm grain", "harsh window light", "editorial off-center".' },
+          },
+        },
+      },
+    },
+    visual_direction_summary: {
+      type: 'string',
+      description: '2-4 sentence prose summary of the visual direction the drafters should commit to. Must be useful even when mood_board is empty.',
     },
   },
 };
@@ -202,6 +239,7 @@ const DRAFT_RULES = [
   'Structure: <head> with viewport + title + a single <style> block; <body> with a real hero + 2 to 3 distinct sections (e.g. feature triad, manifesto column, gallery, pricing strip, FAQ, footer). The sections should NOT all be 3-up card grids; vary the rhythm.',
   'Self-contained: openable as a single file. System-font fallbacks acceptable; if you specify a Google font in CSS, include the @import at the top of the <style> block.',
   'Accessibility: real heading order (one h1, then h2s), buttons are <button>, links are <a>, contrast meets WCAG AA against the chosen --paper / --ink.',
+  'Imagery policy: do NOT embed mood-board images in your HTML. The mood board you receive is pure inspiration — translate it into palette, type, composition, and copy. If your draft genuinely needs imagery, use picsum.photos with a deterministic seed (e.g. https://picsum.photos/seed/draft-N-hero/1600/900) or commit to a pure-CSS/typography solution. Never insert <img src="file://..."> pointing at the mood-board paths.',
 ];
 
 // ---------- Workflow body ----------
@@ -210,9 +248,11 @@ export default async function houdiniDrafts({ args, agent, phase, parallel, log 
   const brief = args?.brief ?? '';
   const designRead = args?.design_read ?? '';
   const constraints = args?.constraints ?? '';
+  const visualBrief = typeof args?.visual_brief === 'string' ? args.visual_brief : '';
   const autonomous = args?.autonomous === true;
   const keywords = Array.isArray(args?.keywords) ? args.keywords.filter((k) => typeof k === 'string' && k.trim().length > 0) : [];
   const hasKeywords = keywords.length > 0;
+  const hasVisualBrief = visualBrief.trim().length > 0;
 
   // Resolve mode for downstream tooling (DESIGN_APPROACH.md, /magic).
   const mode = autonomous ? 'autonomous' : (hasKeywords ? 'keywords' : 'guided');
@@ -281,10 +321,80 @@ export default async function houdiniDrafts({ args, agent, phase, parallel, log 
     ? directive.shared_constraints
     : [];
 
-  // ---------- 2. DRAFT (parallel HTML generation) ----------
+  // ---------- 2. MOOD BOARD (3 inspirational images via nanogen MCP) ----------
+  phase('MoodBoard');
+
+  const moodSignalBlock = autonomous
+    ? `MODE SIGNAL: autonomous wildcard. There is no user visual_brief. Derive the three mood prompts yourself from the brief, design_read, and the sole angle/directive below. Lean into a singular, opinionated visual world — not safe defaults.\n`
+    : hasKeywords
+      ? `MODE SIGNAL: keywords. Treat these keywords as the PRIMARY signal driving the mood board: ${JSON.stringify(keywords)}. They carry weight equal to the brief; every mood image must legibly reflect them in palette, light, media, or composition.\n`
+      : hasVisualBrief
+        ? `MODE SIGNAL: guided with visual_brief. The user-supplied visual_brief is the DOMINANT signal — every mood image must be a faithful interpretation of it. visual_brief: ${JSON.stringify(visualBrief)}\n`
+        : `MODE SIGNAL: guided (no visual_brief supplied). Derive the three mood prompts from the brief + design_read + directives below.\n`;
+
+  const moodPrompt =
+    `OWNER: imagen-direction + impeccable. Produce a 3-image mood board to anchor the drafters that run next. These images are PURE INSPIRATION — they are NEVER embedded into the draft HTML. They exist so the drafters can read a concrete visual world and translate it into palette, typography, composition, and copy.\n` +
+    `\n` +
+    moodSignalBlock +
+    `\n` +
+    `Brief: ${JSON.stringify(brief)}\n` +
+    `Design Read: ${JSON.stringify(designRead)}\n` +
+    `Caller constraints: ${JSON.stringify(constraints)}\n` +
+    `Art-direction directives (one per angle): ${JSON.stringify(perAngleDirectives)}\n` +
+    `Shared constraints: ${JSON.stringify(sharedConstraints)}\n` +
+    `\n` +
+    `STEP 1. Load the nanogen tool schemas. Call ToolSearch with the query:\n` +
+    `  "select:mcp__plugin_presto_nanogen__generate,mcp__plugin_presto_nanogen__describe"\n` +
+    `You CANNOT invoke the tools until their schemas are loaded — calling without ToolSearch first will fail with InputValidationError.\n` +
+    `\n` +
+    `STEP 2. Author EXACTLY 3 prompts spanning three distinct vantage points on the SAME visual world:\n` +
+    `  (a) hero-mood — a dominant scene that establishes the world (16:9, output_path: ${SEEDS_DIR}/mood-1.png)\n` +
+    `  (b) lifestyle-mood — the use context: someone or something using/inhabiting the product space (3:2, output_path: ${SEEDS_DIR}/mood-2.png)\n` +
+    `  (c) detail-mood — close-up material, texture, or surface (1:1, output_path: ${SEEDS_DIR}/mood-3.png)\n` +
+    `\n` +
+    `STEP 3. Each prompt is 1-3 sentences. NOT an essay. Structure: [media + light specifics]. [subject + composition + cropping]. [palette in OKLCH]. End with: "No text in image, no logos, no watermarks."\n` +
+    `\n` +
+    `ANTI-SLOP (enforced with force): BANNED anchor words — "epic", "cinematic", "dreamy", "vibrant", "stunning", "8k", "ultra-detailed", "hyperrealistic", "golden hour" (specify light direction instead), "bokeh" (unless lens-justified). BANNED compositions — centered subject, symmetric three-quarter portrait, hero object on clean gradient, floating product on white seamless. REQUIRED patterns — editorial off-center framing, harsh window light from a specified direction, specific media (35mm grain, scanned slide film, medium-format Portra 400, risograph two-color, cyanotype), edge-of-frame cropping, brand palette dominant and named in OKLCH.\n` +
+    `\n` +
+    `STEP 4. For each of the 3 prompts: call mcp__plugin_presto_nanogen__generate with the prompt + aspect_ratio + output_path. Then call mcp__plugin_presto_nanogen__describe on the returned path to extract structured palette_oklch values and style_tags. Use the path RETURNED by the tool, not the path you requested.\n` +
+    `\n` +
+    `STEP 5. Compose visual_direction_summary — 2-4 sentences of prose that captures the through-line of the three images: the world, the light, the material, the palette, the feeling. The drafters in the next phase will use this as their primary anchor.\n` +
+    `\n` +
+    `FALLBACK: if ToolSearch fails, if generate returns an error (no GEMINI_API_KEY, quota/rate-limit, MCP server unreachable, malformed response), or if describe fails — DO NOT block the workflow. Return mood_board as an empty array [] and put the entire direction into visual_direction_summary as a rich text-only description of what the three mood images WOULD have shown (hero-mood, lifestyle-mood, detail-mood). The drafters can work from prose alone.\n` +
+    `\n` +
+    `Return ONLY the JSON object matching the schema.`;
+
+  const moodBoard = await agent(moodPrompt, { schema: MOOD_BOARD_SCHEMA, label: 'mood-board', phase: 'MoodBoard' });
+
+  const moodImages = Array.isArray(moodBoard?.mood_board) ? moodBoard.mood_board : [];
+  const visualDirectionSummary = typeof moodBoard?.visual_direction_summary === 'string' ? moodBoard.visual_direction_summary : '';
+  log(`houdini-drafts mood board: ${moodImages.length} image(s) generated. summary length=${visualDirectionSummary.length}.`);
+
+  // ---------- 3. DRAFT (parallel HTML generation) ----------
   phase('Draft');
 
   const draftRulesBlock = DRAFT_RULES.map((r, i) => `  ${i + 1}. ${r}`).join('\n');
+
+  const moodBoardForDrafterBlock = (() => {
+    const header = `VISUAL DIRECTION (anchor your draft in this mood — do NOT embed these images in HTML; they are pure inspiration):\n`;
+    const summaryLine = visualDirectionSummary
+      ? `  Visual direction summary (DOMINANT signal): ${JSON.stringify(visualDirectionSummary)}\n`
+      : `  Visual direction summary: (none provided — derive from brief + directive)\n`;
+    if (moodImages.length === 0) {
+      return header + summaryLine + `  Mood board: (no images — work from the summary above as prose-only direction)\n`;
+    }
+    const imageLines = moodImages.map((m, i) => {
+      const path = typeof m?.path === 'string' ? m.path : '';
+      const desc = typeof m?.description === 'string' ? m.description : '';
+      const palette = Array.isArray(m?.palette_oklch) ? m.palette_oklch.join(', ') : '';
+      const tags = Array.isArray(m?.style_tags) ? m.style_tags.join(', ') : '';
+      return `  Mood ${i + 1}: ${path}\n` +
+             `    description: ${JSON.stringify(desc)}\n` +
+             `    palette (OKLCH): ${palette}\n` +
+             `    style tags: ${tags}\n`;
+    }).join('');
+    return header + summaryLine + imageLines;
+  })();
 
   const draftSteps = angles.map((angle, i) => {
     const index = i + 1;
@@ -316,6 +426,8 @@ export default async function houdiniDrafts({ args, agent, phase, parallel, log 
         `Shared constraints (from art direction): ${JSON.stringify(sharedConstraints)}\n` +
         keywordsDrafterBlock +
         `\n` +
+        moodBoardForDrafterBlock +
+        `\n` +
         `Your assigned angle: "${angle}"\n` +
         `Your creative directive (commit to this visual world): ${JSON.stringify(angleDirective)}\n` +
         `\n` +
@@ -343,7 +455,7 @@ export default async function houdiniDrafts({ args, agent, phase, parallel, log 
     log(`  - ${d.name} (${d.angle}) → ${d.draft_file_path}`);
   }
 
-  // ---------- 3. HANDOFF (autonomous only) ----------
+  // ---------- 4. HANDOFF (autonomous only) ----------
   // In guided/keywords modes the /houdini SKILL drives PRESENT/REFINE/HAND-OFF
   // conversationally. In autonomous mode there is no skill loop, so the
   // workflow must finalize the hand-off artifacts itself so that the next
@@ -354,7 +466,7 @@ export default async function houdiniDrafts({ args, agent, phase, parallel, log 
     const draft = drafts.find(Boolean);
     if (!draft) {
       log('Houdini autonomous: no draft produced; skipping hand-off.');
-      return { mode, directive, drafts };
+      return { mode, directive, moodBoard, drafts };
     }
 
     const paletteBullets = Array.isArray(draft.palette_oklch)
@@ -375,6 +487,14 @@ export default async function houdiniDrafts({ args, agent, phase, parallel, log 
     const typeDisplay = draft.type_pair?.display ?? '';
     const typeText = draft.type_pair?.text ?? '';
     const typeRationale = draft.type_pair?.rationale ?? '';
+
+    const moodBoardBullets = moodImages.length > 0
+      ? moodImages.map((m, i) => {
+          const path = typeof m?.path === 'string' ? m.path : '';
+          const desc = typeof m?.description === 'string' ? m.description : '';
+          return `- mood-${i + 1}: ${path} — ${desc}`;
+        }).join('\n')
+      : '- (no mood images generated — see Visual direction summary below)';
 
     const handoffPrompt =
       `OWNER: houdini autonomous hand-off. You are NOT making creative decisions — you are persisting the lone autonomous draft as the project's starter so that the /magic workflow's next run sees a real DESIGN_APPROACH.md and proceeds past its cold-start gate.\n` +
@@ -408,6 +528,12 @@ export default async function houdiniDrafts({ args, agent, phase, parallel, log 
       `Generated in autonomous mode, no user iteration. Angle: ${JSON.stringify(draft.angle ?? '')}.\n` +
       `\n` +
       `## Scene sentence — ${JSON.stringify(draft.scene_sentence ?? '')}\n` +
+      `\n` +
+      `## Visual direction summary\n` +
+      `${visualDirectionSummary || '(none captured)'}\n` +
+      `\n` +
+      `## Mood board\n` +
+      `${moodBoardBullets}\n` +
       `\n` +
       `## Palette (OKLCH)\n` +
       `${paletteBullets}\n` +
@@ -444,8 +570,8 @@ export default async function houdiniDrafts({ args, agent, phase, parallel, log 
 
     log(`houdini-drafts autonomous hand-off complete. wrote ${Array.isArray(handoff?.wrote_paths) ? handoff.wrote_paths.length : 0} files.`);
 
-    return { mode, directive, drafts, handoff };
+    return { mode, directive, moodBoard, drafts, handoff };
   }
 
-  return { mode, directive, drafts };
+  return { mode, directive, moodBoard, drafts };
 }
