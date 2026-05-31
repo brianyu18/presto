@@ -154,14 +154,15 @@ The skill detects mode from arg shape: `--auto` first, then the comma-list shape
 
 **`--nogen` modifier.** Orthogonal to the three modes — composes with any of them (e.g. `/houdini --nogen`, `/houdini "fintech, dark" --nogen`, `/houdini --auto wildcard --nogen`). When present, the MoodBoard phase is skipped entirely; no images are generated and drafters proceed with brief + design_read alone. Use when you've hit Gemini's image-gen quota, want faster iteration (skip ~15s of mood-board generation), are exploring text-only direction, or are running cost-sensitive batches.
 
-### Five phases
+### Six phases
 
 ```
-TUNE IN -> DRAFT -> PRESENT -> REFINE -> HAND-OFF
+TUNE IN -> MOOD -> DRAFT -> PRESENT -> REFINE -> HAND-OFF
 ```
 
 - **TUNE IN** — read the brief, scan existing context, form a Design Read hypothesis. Ask at most two questions, and only if genuinely ambiguous.
-- **DRAFT** — fan out drafter agents in parallel (3 in guided/keywords mode, 1 in autonomous mode). Each writes a self-contained `seeds/draft-N.html` with a distinct creative angle: safe brand-default, anti-default contrarian, wildcard overcommit. Real OKLCH palette, real type system, real hero, real components.
+- **MOOD** (MoodBoard) — generate 3 inspiration images via nanogen, then describe each (palette + style tags). The output is a `visual_direction_summary` that anchors the drafters. Mood images are NOT embedded in HTML; they exist only as visual direction. Mode-aware: autonomous derives 3 prompts itself from brief + design_read; keywords mode uses the keywords as the primary signal; guided mode optionally accepts `args.visual_brief` collected during TUNE IN to seed the prompts. Skipped entirely when `--nogen` is set.
+- **DRAFT** — fan out drafter agents in parallel (3 in guided/keywords mode, 1 in autonomous mode). Each writes a self-contained `seeds/draft-N.html` with a distinct creative angle: safe brand-default, anti-default contrarian, wildcard overcommit. Real OKLCH palette, real type system, real hero, real components. Drafters receive the `visual_direction_summary` from MOOD when available, otherwise fall back to text-only direction.
 - **PRESENT** — show the drafts with one-line scene each. Pick one, or remix (e.g., "1's palette with 2's layout").
 - **REFINE** — conversational loop. You say what should change; houdini edits the chosen draft in place and re-presents. Repeats until you say "this is the starting point."
 - **HAND-OFF** — write `memory/DESIGN_APPROACH.md` (chosen direction, decisions, palette, type, dials inference, refs, anti-refs, what was rejected and why), `seeds/starter.html` (the final draft), and `seeds/tokens.css` (extracted custom-properties).
@@ -186,6 +187,8 @@ The break-out commands are first-class. `/magic` is one composition; the others 
 | `/design-flow [feature]` | `memory/DESIGN_READ.md` + `memory/DIALS.json` (asks if absent) | code in your project | Build one feature without re-running the full flow |
 | `/design-audit [target]` | the target file or directory | `memory/last-audit.json` (Pre-Flight + slop test + emil review) | Check existing code against the three skills' rules |
 | `/design-review` | uncommitted + staged git diff | inline markdown table | Emil's eyes on a change before commit |
+| `/imagen "<prompt>"` | a text prompt | one image file via nanogen | Generate a single reference image with anti-slop prompt patterns applied |
+| `/imagen-edit <path> "<instruction>"` | an existing image + an instruction | a modified image file via nanogen | Warm a palette, swap an angle, change lighting without losing composition |
 
 Each command is invokable directly. None requires `/magic`. None blocks waiting on another. The state in `memory/` is shared, so `DESIGN_READ.md` written by `/design-read` is consumed by `/design-flow` exactly as it is by `/magic`.
 
@@ -398,7 +401,7 @@ Two manifest files under `.claude-plugin/`:
 ```json
 {
   "name": "presto",
-  "version": "0.1.0",
+  "version": "0.1.4",
   "description": "Three production-grade design skills (impeccable, design-taste-frontend, emil-design-eng) stacked into one composable workflow, plus a fourth (houdini) for the cold-start blank canvas.",
   "author": { "name": "Brian Yu" },
   "repository": "https://github.com/brianyu18/presto",
@@ -413,9 +416,9 @@ Two manifest files under `.claude-plugin/`:
 {
   "name": "presto",
   "owner": { "name": "Brian Yu" },
-  "metadata": { "version": "0.1.0", "description": "..." },
+  "metadata": { "version": "0.1.4", "description": "..." },
   "plugins": [
-    { "name": "presto", "version": "0.1.0", "description": "...", "source": "./" }
+    { "name": "presto", "version": "0.1.4", "description": "...", "source": "./" }
   ]
 }
 ```
@@ -448,9 +451,19 @@ Generated images are cached by `sha256(prompt + model + aspect)` at `NANOGEN_CAC
 
 ### Standalone use
 
-presto ships `/imagen` and `/imagen-edit` commands as thin shortcuts around the nanogen MCP tools, so you can generate or remix imagery directly from the slash palette without writing tool-call boilerplate.
+presto ships `/imagen` and `/imagen-edit` commands as thin shortcuts around the nanogen MCP tools, so you can generate or remix imagery directly from the slash palette without writing tool-call boilerplate. Prompt patterns are documented in the `imagen-direction` skill at `skills/imagen-direction/SKILL.md` (anti-slop vocabulary, aspect-ratio cheat sheet, when to use generate vs edit vs describe vs batch, picsum fallback when the MCP server is unavailable).
 
-Quota or speed concerns? Use `--nogen` on `/houdini` or `/magic` to skip the MoodBoard phase entirely. Drafters proceed with text-only direction.
+### Cost model
+
+Worth knowing before you run the full pipeline:
+
+| Workload | Runs against |
+|---|---|
+| `/magic` phases 1-7 (Read, Context, Dials, Stack, Build, Polish, Audit) | Your Claude subscription |
+| MoodBoard phase inside `/houdini` | Gemini image-gen quota (3 calls per houdini run) |
+| `/imagen` and `/imagen-edit` standalone | Gemini image-gen quota (1 call each) |
+
+When the image-gen quota is exhausted, `--nogen` is the graceful degradation path. The MoodBoard phase is skipped cleanly; the rest of the design pipeline runs unchanged with text-only direction.
 
 ---
 

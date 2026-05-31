@@ -165,6 +165,35 @@
     letter-spacing: 0.04em;
   }
 
+  .whats-new {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--accent);
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin: 0 0 48px;
+    display: grid;
+    gap: 10px;
+    max-width: 720px;
+  }
+  .whats-new .wn-label {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--accent);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  .whats-new .wn-list {
+    margin: 0;
+    padding: 0 0 0 18px;
+    display: grid;
+    gap: 6px;
+    font-size: 14px;
+    color: var(--ink-2);
+  }
+  .whats-new .wn-list li { line-height: 1.5; }
+  .whats-new .wn-list strong { color: var(--ink); font-weight: 600; }
+
   footer {
     margin-top: 64px;
     padding-top: 28px;
@@ -201,7 +230,16 @@
   </header>
 
   <h1>Three design skills. <em>One</em> workflow.</h1>
-  <p class="lead">Four decks. The first three walk through <strong>impeccable</strong>, <strong>design-taste-frontend</strong>, and <strong>emil-design-eng</strong> — each deck built using the rules of the skill it describes. The fourth shows how they compose into a single workflow and proposes packaging them as a unified plugin.</p>
+  <p class="lead">Four decks. The first three walk through <strong>impeccable</strong>, <strong>design-taste-frontend</strong>, and <strong>emil-design-eng</strong> — each deck built using the rules of the skill it describes. The fourth shows how they compose into a single workflow and proposes packaging them as a unified plugin. As of v0.1.4, presto bundles the <strong>nanogen</strong> MCP server for Gemini image generation. The houdini workflow now opens with a MoodBoard phase, and <code style="font-family: var(--mono); font-size: 0.9em; background: var(--line-2); padding: 1px 6px; border-radius: 4px;">/imagen</code> + <code style="font-family: var(--mono); font-size: 0.9em; background: var(--line-2); padding: 1px 6px; border-radius: 4px;">/imagen-edit</code> are available as standalone commands.</p>
+
+  <section class="whats-new" aria-label="What's new in v0.1.4">
+    <span class="wn-label">New in v0.1.4</span>
+    <ul class="wn-list">
+      <li><strong>nanogen MCP</strong> for Gemini image gen — bundled, auto-loads with presto.</li>
+      <li><strong>MoodBoard phase</strong> added to /houdini — 3 inspiration images seed the design before drafts are written.</li>
+      <li><strong>--nogen flag</strong> on /houdini and /magic — graceful degradation when image-gen quota hits or you want text-only direction.</li>
+    </ul>
+  </section>
 
   <section class="summary" aria-label="Skill summary">
     <div class="sum">
@@ -278,6 +316,8 @@
         <span>Dark editorial</span>
         <span>Palette · amber on slate</span>
         <span>Type · Fraunces + Geist</span>
+        <span>8-phase magic</span>
+        <span>nanogen MoodBoard</span>
       </div>
       <span class="arrow">Open deck →</span>
     </a>

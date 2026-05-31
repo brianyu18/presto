@@ -818,7 +818,7 @@
   <a href="#s1"></a><a href="#s2"></a><a href="#s3"></a><a href="#s4"></a>
   <a href="#s5"></a><a href="#s6"></a><a href="#s7"></a><a href="#s8"></a>
   <a href="#s9"></a><a href="#s10"></a><a href="#s11"></a><a href="#s12"></a>
-  <a href="#s13"></a><a href="#s14"></a>
+  <a href="#s12b"></a><a href="#s12c"></a><a href="#s12d"></a><a href="#s13"></a><a href="#s14"></a>
 </nav>
 
 <main>
@@ -1036,6 +1036,9 @@
         </ul>
       </div>
     </div>
+    <p style="font-family: var(--mono); font-size: 12px; color: var(--muted); letter-spacing: 0.04em; margin-top: 4px;">
+      Utility skill alongside the three: <code>imagen-direction</code> — anti-slop prompt patterns for nanogen (avoid "epic / cinematic / dreamy / vibrant"; reach for "editorial / off-center / harsh window light / scanned slide film / brand palette dominant"). Sits at the presto-utilities altitude with impeccable, taste, and emil.
+    </p>
   </section>
 
   <!-- 07 — Worked example -->
@@ -1229,7 +1232,7 @@
     <p class="lead">One slash command. Seven phases (plus a conditional cold-start). Six break-out points. Memory that survives the session.</p>
 
     <div class="flow">
-      <div class="fstep" style="opacity: 0.72; border-style: dashed;"><span class="n">00</span><div><h4>HOUDINI <span style="font-family: var(--mono); font-size: 11px; color: var(--muted); letter-spacing: 0.04em; font-weight: 400; margin-left: 6px;">cold start · creative partner</span></h4><p>The only phase allowed to invent. Drafts 3 real starter HTML files in parallel (safe · contrarian · wildcard), iterates with you in a refine loop, lands <code>DESIGN_APPROACH.md</code> + <code>seeds/starter.html</code> + <code>seeds/tokens.css</code>.</p><p style="font-family: var(--mono); font-size: 11px; color: var(--muted); letter-spacing: 0.04em; margin-top: 4px;">conversational, runs as a skill — <code>/magic</code> recommends it but does not invoke inline.</p></div><span class="by">conditional</span></div>
+      <div class="fstep" style="opacity: 0.72; border-style: dashed;"><span class="n">00</span><div><h4>HOUDINI <span style="font-family: var(--mono); font-size: 11px; color: var(--muted); letter-spacing: 0.04em; font-weight: 400; margin-left: 6px;">cold start · creative partner</span></h4><p>The only phase allowed to invent. Six sub-phases: <code>TUNE IN → MOOD → DRAFT → PRESENT → REFINE → HAND-OFF</code>. MOOD generates 3 inspiration images via nanogen and feeds a visual_direction_summary into the drafters. DRAFT writes 3 real starter HTML files in parallel (safe · contrarian · wildcard); HAND-OFF lands <code>DESIGN_APPROACH.md</code> + <code>seeds/starter.html</code> + <code>seeds/tokens.css</code>.</p><p style="font-family: var(--mono); font-size: 11px; color: var(--muted); letter-spacing: 0.04em; margin-top: 4px;">conversational, runs as a skill — <code>/magic</code> recommends it but does not invoke inline. Add <code>--nogen</code> to skip MOOD.</p></div><span class="by">conditional</span></div>
       <div class="fstep"><span class="n">01</span><div><h4>READ</h4><p>State the Design Read: kind · audience · vibe · stack hint. Output: <code>{ read, kind, audience, vibe, stack_hint }</code>.</p></div><span class="by">taste</span></div>
       <div class="fstep"><span class="n">02</span><div><h4>CONTEXT</h4><p>Load PRODUCT.md / DESIGN.md, pick register, set palette strategy, write the scene sentence. Output: <code>{ register, palette_strategy, existing_tokens, scene_sentence }</code>.</p></div><span class="by">impeccable</span></div>
       <div class="fstep"><span class="n">03</span><div><h4>DIALS</h4><p>VARIANCE · MOTION · DENSITY (1–10) with reasoning tied to the read. Output: <code>{ variance, motion, density, reasoning }</code>.</p></div><span class="by">taste</span></div>
@@ -1242,15 +1245,27 @@
     <div class="cmds" style="margin-top: 12px;">
       <div class="cmd">
         <span class="phase">Phase 00 · cold start</span>
-        <span class="name">houdini [brief]</span>
-        <p>The creative partner. Three modes: guided (conversational, default), <code>--auto</code> (autonomous solo run), or keywords (e.g. <code>'fintech, dark, terminal'</code>). When invoked without explicit args, TUNE IN now asks which mode via <code>AskUserQuestion</code> — power-user shortcuts via flags still bypass the question. Drafts real starter templates, iterates with you when interactive, lands a starter <code>/magic</code> can build on.</p>
-        <span class="chain">taste + impeccable</span>
+        <span class="name">houdini [brief] [--nogen]</span>
+        <p>The creative partner. Three modes: guided (conversational, default), <code>--auto</code> (autonomous solo run), or keywords (e.g. <code>'fintech, dark, terminal'</code>). When invoked without explicit args, TUNE IN asks which mode via <code>AskUserQuestion</code>. MOOD generates 3 inspiration images via nanogen and passes a visual_direction_summary to the drafters. Add <code>--nogen</code> to skip MOOD (no Gemini draw).</p>
+        <span class="chain">taste + impeccable + nanogen</span>
       </div>
       <div class="cmd">
         <span class="phase">Entry</span>
-        <span class="name">magic [intent] [--surprise]</span>
-        <p>Full 7-phase flow. Without <code>--surprise</code>: detects cold-start and confirms whether to run <code>/houdini</code> first (yes / no / customize). With <code>--surprise</code>: autonomously runs houdini in wildcard mode, writes the hand-off artifacts, then proceeds through every phase. Zero prompts end to end. Phase outputs persist to <code>presto/memory/</code>.</p>
+        <span class="name">magic [intent] [--surprise] [--nogen]</span>
+        <p>Full 7-phase flow. Without <code>--surprise</code>: detects cold-start and confirms whether to run <code>/houdini</code> first. With <code>--surprise</code>: autonomously runs houdini in wildcard mode, writes the hand-off artifacts, then proceeds through every phase. <code>--nogen</code> composes with any mode and forwards to houdini so MOOD is skipped. Phase outputs persist to <code>presto/memory/</code>.</p>
         <span class="chain">all three</span>
+      </div>
+      <div class="cmd">
+        <span class="phase">Imagery</span>
+        <span class="name">imagen "&lt;prompt&gt;"</span>
+        <p>Generate a single image via nanogen. One-shot use with anti-slop patterns applied (no buzzwords; reach for editorial / off-center / harsh light / scanned film instead).</p>
+        <span class="chain">nanogen + imagen-direction</span>
+      </div>
+      <div class="cmd">
+        <span class="phase">Imagery</span>
+        <span class="name">imagen-edit &lt;path&gt; "&lt;instruction&gt;"</span>
+        <p>Modify an existing image (warmer palette, different angle, swap background) without losing composition. Gemini 2.5 Flash native edit.</p>
+        <span class="chain">nanogen + imagen-direction</span>
       </div>
       <div class="cmd">
         <span class="phase">Phase 01</span>
@@ -1289,11 +1304,195 @@
     </p>
   </section>
 
+  <!-- 12b — Houdini phase flow with MOOD -->
+  <section id="s12b" class="slide">
+    <h2>Houdini, six phases.</h2>
+    <p>The cold-start skill now opens with a MOOD phase. Three inspiration images, described by the model, distilled into a <code>visual_direction_summary</code> the drafters anchor to. The images are never embedded in HTML — they are pure direction.</p>
+
+    <div class="flow">
+      <div class="fstep"><span class="n">01</span><div><h4>TUNE IN</h4><p>Pick mode (guided / autonomous / keywords). Lock the brief: kind, audience, vibe, stack hint.</p></div><span class="by">conversation</span></div>
+      <div class="fstep" style="border-color: var(--accent-soft);"><span class="n">02</span><div><h4>MOOD <span style="font-family: var(--mono); font-size: 11px; color: var(--accent); letter-spacing: 0.04em; font-weight: 400; margin-left: 6px;">new in v0.1.4</span></h4><p>Derive 3 prompts (hero · lifestyle · detail) from brief + design read. nanogen generates + describes each. <code>visual_direction_summary</code> is passed to drafters. Skipped when <code>--nogen</code> is set.</p></div><span class="by">nanogen</span></div>
+      <div class="fstep"><span class="n">03</span><div><h4>DRAFT</h4><p>Three parallel drafters (safe · contrarian · wildcard) write full starter HTML. Each anchors to the mood summary as visual direction, but never embeds the mood images themselves.</p></div><span class="by">taste + impeccable</span></div>
+      <div class="fstep"><span class="n">04</span><div><h4>PRESENT</h4><p>Open a side-by-side comparison board. Show all three drafts, the mood thumbnails, and the visual_direction_summary alongside.</p></div><span class="by">conversation</span></div>
+      <div class="fstep"><span class="n">05</span><div><h4>REFINE</h4><p>Conversational iteration loop. Swap stack, push variance, tighten palette, redraw mood if needed.</p></div><span class="by">conversation</span></div>
+      <div class="fstep"><span class="n">06</span><div><h4>HAND-OFF</h4><p>Write <code>DESIGN_APPROACH.md</code>, <code>seeds/starter.html</code>, <code>seeds/tokens.css</code>. <code>/magic</code> picks up from here.</p></div><span class="by">impeccable</span></div>
+    </div>
+
+    <p style="font-family: var(--mono); font-size: 12px; color: var(--muted); letter-spacing: 0.04em; margin-top: 4px;">
+      Mode-aware MOOD: autonomous derives prompts from brief + design_read · keywords mode uses the keywords as the primary signal · guided mode accepts an optional <code>visual_brief</code> from the TUNE IN conversation.
+    </p>
+  </section>
+
+  <!-- 12c — Nanogen + mood-first imagery -->
+  <section id="s12c" class="slide">
+    <span class="eyebrow">v0.1.4 · imagery infrastructure</span>
+    <h2>Nanogen — image generation as <em>direction</em>, not deliverable.</h2>
+    <p>Presto bundles the nanogen MCP server for Gemini image gen (pure-stdlib Python 3, standalone repo at <code>github.com/brianyu18/nanogen</code>). The MoodBoard phase of <code>/houdini</code> generates exactly 3 inspiration images at the start of every cold-start, describes them, and passes the <code>visual_direction_summary</code> into the drafters. Drafters anchor to the mood but do not embed the generated images in their HTML — mood is pure guidance.</p>
+
+    <div style="display: grid; gap: 18px; grid-template-columns: 1fr; align-items: start;">
+      <div style="display: grid; gap: 14px; grid-template-columns: repeat(3, 1fr) 56px 1fr; align-items: stretch;">
+        <div style="background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); padding: 18px; display: grid; gap: 8px; align-content: center;">
+          <span style="font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted);">Mood 1</span>
+          <div style="aspect-ratio: 4/3; background: linear-gradient(135deg, oklch(0.32 0.04 70), oklch(0.28 0.03 250)); border-radius: var(--r-sm);"></div>
+          <span style="font-family: var(--mono); font-size: 11px; color: var(--accent);">Hero-mood</span>
+        </div>
+        <div style="background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); padding: 18px; display: grid; gap: 8px; align-content: center;">
+          <span style="font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted);">Mood 2</span>
+          <div style="aspect-ratio: 4/3; background: linear-gradient(135deg, oklch(0.36 0.06 65), oklch(0.24 0.02 240)); border-radius: var(--r-sm);"></div>
+          <span style="font-family: var(--mono); font-size: 11px; color: var(--accent);">Lifestyle-mood</span>
+        </div>
+        <div style="background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); padding: 18px; display: grid; gap: 8px; align-content: center;">
+          <span style="font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted);">Mood 3</span>
+          <div style="aspect-ratio: 4/3; background: linear-gradient(135deg, oklch(0.30 0.05 80), oklch(0.22 0.02 260)); border-radius: var(--r-sm);"></div>
+          <span style="font-family: var(--mono); font-size: 11px; color: var(--accent);">Detail-mood</span>
+        </div>
+        <div style="display: flex; align-items: center; justify-content: center; color: var(--line);">
+          <svg viewBox="0 0 56 22" preserveAspectRatio="none" aria-hidden="true" style="width: 100%; height: 22px;"><line x1="0" y1="11" x2="48" y2="11" stroke="currentColor" stroke-width="1"/><polyline points="42,5 52,11 42,17" fill="none" stroke="currentColor" stroke-width="1"/></svg>
+        </div>
+        <div style="background: var(--surface-2); border: 1px solid var(--accent-soft); border-radius: var(--r-md); padding: 18px; display: grid; gap: 8px; align-content: center;">
+          <span style="font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent);">consumes summary</span>
+          <h4 style="font-family: var(--sans); font-size: 15px; font-weight: 600; color: var(--ink); margin: 0;">Drafter HTML</h4>
+          <p style="font-family: var(--mono); font-size: 11px; color: var(--ink-2); margin: 0;">3 starter files. Anchor to mood. Never embed it.</p>
+        </div>
+      </div>
+
+      <div>
+        <h3 style="font-family: var(--sans); font-size: 13px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); margin: 0 0 10px;">Tools exposed by nanogen</h3>
+        <div style="display: grid; gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: var(--r-md); overflow: hidden; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));">
+          <div style="background: var(--surface); padding: 18px 20px; display: grid; gap: 6px;">
+            <span style="font-family: var(--mono); font-size: 13px; color: var(--accent); font-weight: 500;">generate</span>
+            <p style="font-size: 13px; color: var(--ink-2); margin: 0;">Single image via Gemini 2.5 Flash Image. Imagen 3 and Gemini 3 Pro Image available as variants.</p>
+          </div>
+          <div style="background: var(--surface); padding: 18px 20px; display: grid; gap: 6px;">
+            <span style="font-family: var(--mono); font-size: 13px; color: var(--accent); font-weight: 500;">edit</span>
+            <p style="font-size: 13px; color: var(--ink-2); margin: 0;">Modify an existing image while preserving composition. Native Gemini 2.5 Flash edit.</p>
+          </div>
+          <div style="background: var(--surface); padding: 18px 20px; display: grid; gap: 6px;">
+            <span style="font-family: var(--mono); font-size: 13px; color: var(--accent); font-weight: 500;">describe</span>
+            <p style="font-size: 13px; color: var(--ink-2); margin: 0;">Vision call for palette + style tags. Feeds the visual_direction_summary.</p>
+          </div>
+          <div style="background: var(--surface); padding: 18px 20px; display: grid; gap: 6px;">
+            <span style="font-family: var(--mono); font-size: 13px; color: var(--accent); font-weight: 500;">batch</span>
+            <p style="font-size: 13px; color: var(--ink-2); margin: 0;">Multiple images at once through a shared rate-limit queue.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="callout warn" style="background: var(--bg); border-color: var(--line-2);">
+        <span class="lbl" style="color: var(--muted);">When the MCP fails or quota is hit</span>
+        <p style="font-size: 13.5px; color: var(--ink-2); margin: 0;">Graceful degradation: empty <code>mood_board</code>, empty <code>visual_direction_summary</code>, the rest of houdini proceeds with text-only direction. The intentional version of this fallback is the <code>--nogen</code> flag — covered next.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 12d — Posture matrix: every mode with and without --nogen -->
+  <section id="s12d" class="slide">
+    <h2>Posture matrix.</h2>
+    <p>Every mode pairs with a <code>--nogen</code> variant. Same path, MOOD skipped, no Gemini image-gen draw. Use it when quota is hit, when iterating fast, or for text-only exploration.</p>
+    <table class="conf" aria-label="Posture matrix — modes with and without --nogen">
+      <thead>
+        <tr><th>Command</th><th>Prompts</th><th>When to use</th><th>Image gen</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>/magic --surprise</code></td>
+          <td>zero</td>
+          <td>Trust the wildcard. Want a finished design to react to.</td>
+          <td class="win">yes · 3 mood images</td>
+        </tr>
+        <tr>
+          <td><code>/magic --surprise --nogen</code></td>
+          <td>zero</td>
+          <td>Same path as above. Quota constrained or text-only exploration.</td>
+          <td>no</td>
+        </tr>
+        <tr>
+          <td><code>/magic</code></td>
+          <td>one (cold-start confirm)</td>
+          <td>Standard entry. Confirms whether to run <code>/houdini</code> first.</td>
+          <td class="win">yes (if houdini runs)</td>
+        </tr>
+        <tr>
+          <td><code>/magic --nogen</code></td>
+          <td>one (cold-start confirm)</td>
+          <td>Standard entry, no Gemini draw downstream.</td>
+          <td>no</td>
+        </tr>
+        <tr>
+          <td><code>/magic --guided &lt;intent&gt;</code></td>
+          <td>per-phase</td>
+          <td>High-stakes work. Approval at every phase boundary.</td>
+          <td class="win">yes · 3 mood images</td>
+        </tr>
+        <tr>
+          <td><code>/magic --guided &lt;intent&gt; --nogen</code></td>
+          <td>per-phase</td>
+          <td>High-stakes, no Gemini draw. Cost or quota sensitivity.</td>
+          <td>no</td>
+        </tr>
+        <tr>
+          <td><code>/houdini</code></td>
+          <td>guided · per-phase</td>
+          <td>Cold start. Conversational mode picked at TUNE IN.</td>
+          <td class="win">yes · 3 mood images</td>
+        </tr>
+        <tr>
+          <td><code>/houdini --nogen</code></td>
+          <td>guided · per-phase</td>
+          <td>Cold start, text-only direction. Drafters fall back to brief + dials.</td>
+          <td>no</td>
+        </tr>
+        <tr>
+          <td><code>/houdini --auto</code></td>
+          <td>zero</td>
+          <td>Autonomous solo run. Single wildcard draft.</td>
+          <td class="win">yes · 3 mood images</td>
+        </tr>
+        <tr>
+          <td><code>/houdini --auto --nogen</code></td>
+          <td>zero</td>
+          <td>Autonomous solo run, no Gemini draw.</td>
+          <td>no</td>
+        </tr>
+        <tr>
+          <td><code>/houdini "kw1, kw2"</code></td>
+          <td>zero</td>
+          <td>Keyword seed. Keywords are the primary signal for MOOD prompts.</td>
+          <td class="win">yes · 3 mood images</td>
+        </tr>
+        <tr>
+          <td><code>/houdini "kw1, kw2" --nogen</code></td>
+          <td>zero</td>
+          <td>Keyword seed, text-only. Faster iteration.</td>
+          <td>no</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="surprise-callouts">
+      <div class="callout">
+        <span class="lbl">Cost model</span>
+        <ul>
+          <li><code>/magic</code> phases 1–7 run against the Claude subscription, not Gemini.</li>
+          <li>MoodBoard runs against the Gemini image-gen quota — 3 calls per houdini run.</li>
+          <li><code>/imagen</code> and <code>/imagen-edit</code> also draw from the image-gen quota.</li>
+        </ul>
+      </div>
+      <div class="callout warn">
+        <span class="lbl">When quota is hit</span>
+        <ul>
+          <li><code>--nogen</code> is the graceful degradation path. Append it to any of the modes above.</li>
+          <li>If the MCP fails mid-run, houdini auto-falls-back to empty mood and text-only direction.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
   <!-- 13 — /magic --surprise pipeline -->
   <section id="s13" class="slide">
-    <span class="eyebrow">Slide 13 · the wildcard path</span>
+    <span class="eyebrow">Slide 13 · the wildcard path · <code style="background: var(--accent-soft); color: var(--accent); padding: 2px 8px; border-radius: 999px; font-size: 10px; letter-spacing: 0.06em;">--nogen also available</code></span>
     <h2><em style="font-style: italic; color: var(--accent);">/magic --surprise</em> — zero to template.</h2>
-    <p class="lead">When the goal is speed and you trust the wildcard, <code>--surprise</code> collapses every confirmation prompt into a single autonomous run. From blank intent to AUDIT, no questions.</p>
+    <p class="lead">When the goal is speed and you trust the wildcard, <code>--surprise</code> collapses every confirmation prompt into a single autonomous run. From blank intent to AUDIT, no questions. <code>/magic --surprise --nogen</code> takes the same path but skips MOOD — zero prompts, no Gemini image-gen draw.</p>
 
     <div class="surprise-pipe">
       <div class="pipe-box intent">
@@ -1308,7 +1507,7 @@
       <div class="pipe-box tinted">
         <span class="lbl">Houdini workflow</span>
         <h4>autonomous = true</h4>
-        <p class="detail"><span>n_drafts = 1</span><span>angle = wildcard</span><span>Brief → Draft → Handoff</span></p>
+        <p class="detail"><span>n_drafts = 1</span><span>angle = wildcard</span><span>TUNE IN → MOOD → DRAFT → HAND-OFF</span></p>
       </div>
       <div class="pipe-arrow">
         <span class="note">3 files written</span>
@@ -1341,6 +1540,7 @@
 
     <div class="surprise-pills">
       <span class="pill"><strong>0</strong>user prompts</span>
+      <span class="pill"><strong>3</strong>mood images (0 with --nogen)</span>
       <span class="pill"><strong>1</strong>wildcard draft</span>
       <span class="pill"><strong>8</strong>phases total</span>
     </div>
@@ -1369,8 +1569,8 @@
     <p class="lead">Read the room with taste, load context and pick the register with impeccable, build with both, polish every animation with emil, and audit against all three before ship — packaged as <code>presto</code> so the Design Read and dials persist across sessions.</p>
     <div class="stat-row">
       <div class="stat"><span class="lbl">Plugin name</span><span class="vv">presto</span></div>
-      <div class="stat"><span class="lbl">Skills</span><span class="vv">3</span></div>
-      <div class="stat"><span class="lbl">Commands</span><span class="vv">6 new + 25</span></div>
+      <div class="stat"><span class="lbl">Skills</span><span class="vv">3 + imagen-direction</span></div>
+      <div class="stat"><span class="lbl">Commands</span><span class="vv">8 new + 25</span></div>
       <div class="stat"><span class="lbl">Altitudes</span><span class="vv">Project · Page · Component</span></div>
     </div>
     <div class="btn-row">
