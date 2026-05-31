@@ -2,6 +2,8 @@
 
 A Claude Code plugin that stacks three production-grade design skills (impeccable, design-taste-frontend, emil-design-eng) into one composable workflow. Run `/magic` to go end to end, run `/houdini` to fill the blank canvas with a real starter template, or invoke any of six standalone break-out commands for surgical control.
 
+> **v0.1.7** — major resource-management refactor + flag expansion. Two new top-level dirs (`seeds/` active workspace, `outputs/<slug>/` per-run archive), four new flags (`--useimg`, `--gen`, `--use <slug>`, `--nohoudini`), houdini now auto-detects user-supplied resources in `seeds/` (BYO assets — no need to nanogen-generate everything), and embedded mood images are now preserved by `/magic` Build. presto is per-project: drop the plugin into any project and it creates the working dirs on first run. See [What's new in v0.1.7](#whats-new-in-v017) below.
+
 ---
 
 ## Table of contents
@@ -23,6 +25,7 @@ A Claude Code plugin that stacks three production-grade design skills (impeccabl
 15. [Plugin manifest](#plugin-manifest)
 16. [Extending](#extending)
 17. [Inspirations and credits](#inspirations-and-credits)
+18. [What's new in v0.1.7](#whats-new-in-v017)
 
 ---
 
@@ -68,63 +71,86 @@ The plugin self-marketplaces, so the same repo serves both roles. After installa
 
 ## Quick start
 
-Net-new project, fastest path from blank brief to a finished starter design:
+**presto is per-project.** Drop into any project, run `/magic` or `/houdini`, and presto lazy-creates `seeds/`, `memory/`, and `outputs/` in the current working directory. No global state. Run it again in a different project and you get a fresh set of dirs there.
+
+### Zero-prompt, max-surface validation run
+
+The single command that exercises the most of presto in one shot:
 
 ```
-/magic --surprise build a portfolio for a sound designer
+/magic --surprise --useimg-2 --gen-4 "build a portfolio for a sound designer"
 ```
 
-Zero prompts. presto runs houdini autonomously in wildcard mode, lands a starter HTML template plus tokens plus a written DESIGN_APPROACH.md, then runs the full eight-phase magic flow with audit at the end. You see the result when it is finished.
+Lazy-init dirs → generate run slug → houdini autonomous (4 mood images) → drafter may embed up to 2 → magic Read..Build (preserves embeds) → Polish → Audit → Finalize moves seeds/ + memory/ into `outputs/<slug>/`. You get a clean working dir at the end and a permanent run archive.
 
-Net-new with oversight:
-
-```
-/magic build a portfolio for a sound designer
-```
-
-One prompt up front (cold-start gate: run houdini first?), then continues autonomously. Best balance of speed and visibility.
-
-Net-new with full oversight:
+### Common patterns
 
 ```
-/magic --guided build a portfolio for a sound designer
+/magic --surprise <intent>                        # zero prompts, autonomous
+/magic <intent>                                   # one prompt (cold-start gate), then autonomous
+/magic --guided <intent>                          # pause for approval at every phase
+
+/magic --nohoudini <intent>                       # I have my own seed in seeds/; skip cold-start
+/magic --use <slug> <intent>                      # re-run on a prior outputs/<slug>/ archive
+
+/houdini                                          # cold-start (asks mode), writes hand-off
+/houdini --auto <intent>                          # autonomous, single wildcard draft
+/houdini "fintech, dark, terminal"                # keywords mode, 3 drafts
+/houdini --nogen <intent>                         # skip nanogen (text-only direction)
+
+/design-audit src/components/Hero.tsx             # pre-flight + slop + emil review on existing code
 ```
 
-Pauses between every phase for Approve / Revise / Skip / Abort. Slower, but maximum control.
+### Image-side flags (orthogonal; compose with any mode)
 
-Cold start alone, without invoking magic:
+| Flag | What | Default |
+|---|---|---|
+| `--nogen` | Skip the MoodBoard phase entirely (no nanogen calls) | off |
+| `--gen[-N]` | Override mood-board image count (1–5) | 3 |
+| `--useimg[-N]` | Let the drafter embed up to N mood images as `<img>` tags | autonomous→2, others→0 |
 
-```
-/houdini
-```
+Three syntactic forms each: `--gen-4`, `--gen 4`, `--gen=4`. Bare `--useimg` defaults to 2; `--useimg-0` explicitly disables. Safety: workflow auto-bumps `--gen` if `--useimg N > 3` and `--gen` wasn't set; clamps `--useimg` to `--gen` with WARN if both are explicit and conflict; `--nogen` wins over `--useimg`.
 
-Asks which mode (autonomous, keywords, guided), runs the picked mode, writes hand-off artifacts, exits.
+### Bringing your own seed resources
 
-Audit existing code:
+presto's MoodBoard auto-detects user-supplied files in `seeds/`. Drop reference images, brand assets, or screenshots in `seeds/` *before* running `/houdini` or `/magic`. Anything that isn't a workflow-owned filename (`mood-1.png`–`mood-5.png`, `draft-1.html`–`draft-5.html`, `starter.html`, `tokens.css`) is treated as a primary visual reference. There is NO quantity cap.
 
-```
-/design-audit src/components/Hero.tsx
-```
+Behavior when user resources are present:
 
-Runs Pre-Flight matrix, slop test, and emil review against the target. No new code produced.
+| Flag combo | Behavior |
+|---|---|
+| User refs only (no `--gen`) | nanogen is skipped; refs become the mood board (describe extracts palette + tags) |
+| User refs + `--gen-N` | Augment: refs are moods 1..K; nanogen generates N additional moods referencing your inputs |
+| User refs + `--nogen` | refs-only describe; no generation |
+| No user refs | Pure nanogen path (original behavior) |
+
+Then run `/magic --nohoudini "redesign as a calmer dashboard"` to skip the cold-start gate entirely and have magic Build directly on your seed.
 
 ---
 
 ## The /magic command
 
-`/magic` is the canonical composition. Eight phases in linear order, with one explicit owner per phase. Three invocation modes.
+`/magic` is the canonical composition. Nine phases in linear order, with one explicit owner per phase. Five invocation modes.
 
-### Three modes
+### Five modes
 
 | Mode | Invocation | Prompts | Best for |
 |---|---|---|---|
-| `--surprise` | `/magic --surprise <intent>` | 0 prompts end to end | Speed; reacting to a finished design |
+| `--surprise` | `/magic --surprise <intent>` | 0 prompts end to end | Speed; reacting to a finished design from a fresh start |
 | default | `/magic <intent>` | 1 prompt (cold-start gate) | Balanced; confirm the seed, then run |
 | `--guided` | `/magic --guided <intent>` | 7 prompts (1 gate + 6 phase approvals) | High-stakes; oversight at every phase |
+| `--nohoudini` | `/magic --nohoudini <intent>` | 0 prompts | You've manually placed seed assets in `seeds/`; skip the cold-start gate |
+| `--use <slug>` | `/magic --use <slug> <intent>` | 0–1 prompts (only on seed conflict) | Iterate on a prior `outputs/<slug>/` archive |
 
-If both `--surprise` and `--guided` are passed, `--surprise` wins (it is the more decisive bypass) and the override is logged.
+**Mutual exclusion rules:**
+- `--use` beats `--surprise` (you've named a seed; don't generate a new one). Override logged.
+- `--surprise` beats `--nohoudini` (surprise must run houdini). Override logged.
+- `--use` implies `--nohoudini` (your seed is in place; cold-start gate is moot).
+- `--surprise` and `--guided` together → `--surprise` wins (more decisive bypass). Override logged.
 
-`--nogen` is also accepted on `/magic` and propagates through to houdini whenever houdini is invoked. In `--surprise` mode the flag is passed directly into the houdini workflow as `skip_image_gen: true`. In default/`--guided` mode, if the user opts in at the cold-start gate, the flag is forwarded to the `/houdini` invocation. The MoodBoard phase is skipped; downstream `/magic` phases proceed unchanged.
+**Image-side flags** (`--nogen`, `--gen[-N]`, `--useimg[-N]`) are orthogonal to mode flags and compose with any of them; they propagate verbatim to every `/houdini` invocation this command triggers. See [Quick start](#quick-start) for the safety semantics.
+
+**`--use <slug>` iteration prompt.** When `--use <slug>` is invoked over a non-empty `seeds/`, presto asks: Merge (keep current + copy slug) / Orphan (move current to `outputs/_orphans/<timestamp>/` then copy slug) / Abort. If `seeds/` is empty, no prompt.
 
 ### What happens in each mode
 
@@ -198,22 +224,25 @@ Plus `/impeccable [cmd]` as a passthrough to any of impeccable's 25 sub-commands
 
 ---
 
-## The eight phases
+## The nine phases
 
-`/magic` runs phases 0 through 7 in order. Each phase has exactly one owner. Phase outputs are JSON, schema-validated, and persisted to `memory/` so subsequent phases (or new sessions) can read them.
+`/magic` runs phases 0 through 8 in order. Each phase has exactly one owner. Phase outputs are JSON, schema-validated, and persisted to `memory/` so subsequent phases (or new sessions) can read them.
 
 | # | Phase | Owner | Reads from | Writes to | Output |
 |---|---|---|---|---|---|
-| 0 | HOUDINI | houdini skill (optional) | the intent | `memory/DESIGN_APPROACH.md`, `seeds/` | Cold-start gate: detect, recommend, delegate, OR skip |
-| 1 | READ | design-taste-frontend | intent + DESIGN_APPROACH.md if present | `memory/DESIGN_READ.md` | `{ read, kind, audience, vibe, stack_hint }` |
+| 0 | HOUDINI | houdini skill (optional) | the intent + seeds/ scan | `memory/DESIGN_APPROACH.md`, `seeds/` | Cold-start gate: detect, recommend, delegate, OR skip |
+| 1 | READ | design-taste-frontend | intent + DESIGN_APPROACH.md if present | `memory/DESIGN_READ.json` | `{ read, kind, audience, vibe, stack_hint }` |
 | 2 | CONTEXT | impeccable | DESIGN_READ + project files | `memory/CONTEXT.json` | `{ register, palette_strategy, existing_tokens, scene_sentence }` |
 | 3 | DIALS | design-taste-frontend | DESIGN_READ + CONTEXT | `memory/DIALS.json` | `{ variance, motion, density, reasoning }` |
 | 4 | STACK | design-taste-frontend | prior phases | `memory/STACK.json` | `{ framework, ds_package, type_family, motion_lib, icons }` |
-| 5 | BUILD | impeccable + design-taste-frontend | all prior phases | files in your project + `memory/last-build.json` | `{ files_written, notes }` |
+| 5 | BUILD | impeccable + design-taste-frontend | all prior phases + DESIGN_APPROACH `## Embedded mood images` | files in `outputs/<slug>/` + `memory/BUILD.json` | `{ files_written, notes }` |
 | 6 | POLISH | emil-design-eng | BUILD output + DIALS | `memory/POLISH.json` | `{ animations[], review_table_md }` |
 | 7 | AUDIT | all three (parallel) | everything | `memory/audit-*.json` and `memory/last-audit.json` | `{ preflight_pass, slop_pass, review_findings, gate }` |
+| 8 | FINALIZE | finalize agent | `seeds/`, `memory/` | `outputs/<slug>/{seeds,memory}/`, `outputs/<slug>/META.json` | `{ moved_paths, output_dir, meta_path }` |
 
-Phase 0 is the only one allowed to halt the workflow. Phase 7 is the only one that gates: it returns `pass` only if Pre-Flight passes AND slop test passes AND zero `block`-severity findings appear in emil's review. `warn`-severity findings surface but do not fail the gate.
+Phase 0 is the only one allowed to halt the workflow. Phase 7 is the only one that gates. Phase 8 fires only on full pipeline runs (skipped on break-out commands like `/design-read`, `/design-audit` that pass `finalize: false`). After Finalize, `seeds/` and `memory/` are empty (except `.gitkeep`); the run is fully archived under `outputs/<slug>/`.
+
+**Image preservation chain.** When the houdini drafter embeds mood images (`<img src="mood-N.png">`) in autonomous mode or when `--useimg-N` is set, the Handoff phase writes their relative paths into a `## Embedded mood images` section in `DESIGN_APPROACH.md`. Build's IMAGE PRESERVATION RULE clause reads that section and treats those tags as intentional content during re-authoring — they survive the rewrite. Build reports preservation count in `BUILD.json` notes (e.g. "preserved 2 of 2 embedded mood images").
 
 ### Phase 7 (AUDIT) in detail
 
@@ -246,45 +275,61 @@ const gate = audit.preflight_pass
 
 ## Memory model
 
-`presto/memory/` holds the persistent state shared between commands. Files are written by their owning phase or break-out command, read by anyone who needs them.
+`<project>/memory/` (in the user's cwd, NOT inside the plugin) holds the persistent state shared between commands during an active run. Files are written by their owning phase or break-out command, read by anyone who needs them.
 
 ```
-memory/
-├── DESIGN_APPROACH.md   ← houdini HAND-OFF; the chosen direction and what was rejected
-├── DESIGN_READ.md       ← phase 1 output; the one-line Design Read + kind/audience/vibe
-├── CONTEXT.json         ← phase 2 output; register, palette strategy, existing tokens
-├── DIALS.json           ← phase 3 output; VARIANCE/MOTION/DENSITY values + reasoning
-├── STACK.json           ← phase 4 output; framework, design-system, type, motion lib, icons
-├── POLISH.json          ← phase 6 output; per-element animation decisions + review table
-├── last-build.json      ← phase 5 output; what files were written this run
-├── last-audit.json      ← phase 7 output; gate + all findings
-├── audit-preflight.json ← raw Pre-Flight result
-├── audit-slop.json      ← raw slop test result
-└── audit-review.json    ← raw emil review result
+memory/                       ← active run state; emptied by Finalize on full magic runs
+├── DESIGN_APPROACH.md        ← houdini HAND-OFF; chosen direction + ## Embedded mood images section
+├── DESIGN_READ.json          ← phase 1 output
+├── CONTEXT.json              ← phase 2 output
+├── DIALS.json                ← phase 3 output
+├── STACK.json                ← phase 4 output
+├── POLISH.json               ← phase 6 output
+├── BUILD.json                ← phase 5 output; includes preservation count
+├── last-audit.json           ← phase 7 output; gate + all findings
+├── audit-preflight.json      ← raw Pre-Flight result
+├── audit-slop.json           ← raw slop test result
+└── audit-review.json         ← raw emil review result
 ```
 
-Re-running a phase overwrites its file. Re-running `/magic` reads them back so the flow is incremental: if `DESIGN_READ.md` already exists, the Read agent uses it as input rather than re-deriving the read from the raw intent. This is what makes break-out commands compose without orchestration.
+After a full `/magic` run, Phase 8 (Finalize) MOVES `memory/*` into `outputs/<slug>/memory/`. The active `memory/` ends empty (except `.gitkeep`), ready for the next run. Break-out commands that don't run to completion (like `/design-read`, `/design-audit`) leave `memory/` populated so you can compose with subsequent break-outs or a follow-up `/magic`.
+
+Re-running a phase overwrites its file. Re-running `/magic` reads them back so the flow is incremental: if `DESIGN_READ.json` already exists, the Read agent uses it as input rather than re-deriving the read from the raw intent. This is what makes break-out commands compose without orchestration.
 
 ---
 
-## Hand-off artifacts
+## Hand-off artifacts (seeds/) and the per-run archive (outputs/<slug>/)
 
-`presto/seeds/` holds the design artifacts produced by houdini:
+`<project>/seeds/` is the single-purpose **active workspace**. It holds whatever's currently feeding a run — user-supplied refs you've dropped in, plus anything houdini writes:
 
 ```
-seeds/
-├── draft-1.html         ← drafter 1 output (guided/keywords mode), or the sole draft (autonomous)
-├── draft-2.html         ← drafter 2 output (guided/keywords mode only)
-├── draft-3.html         ← drafter 3 output (guided/keywords mode only)
-├── starter.html         ← the chosen + refined draft, hand-off artifact for /magic Build
-└── tokens.css           ← extracted :root custom properties (palette in OKLCH, type, easing, radii)
+seeds/                                ← active workspace; emptied by Finalize on full magic runs
+├── [your-refs.png, brand.svg, ...]   ← USER-PROVIDED (any name, any quantity, picked up automatically)
+├── mood-1.png … mood-N.png           ← nanogen-generated mood board (when MoodBoard runs)
+├── draft-1.html … draft-K.html       ← houdini drafter outputs (K=1 autonomous, 3 keywords/guided)
+├── starter.html                      ← the chosen + refined draft (hand-off for /magic Build)
+└── tokens.css                        ← extracted :root custom properties (OKLCH palette, type, easing)
 ```
 
-Each draft is a self-contained 200-400-line HTML file with real OKLCH palette, real type system, real hero, and real component scaffolding. The drafts are openable directly in a browser without a build step.
+Each draft is a self-contained 200–400-line HTML file with real OKLCH palette, real type system, real hero, and real component scaffolding. Drafts are openable directly in a browser without a build step.
 
-After PRESENT and REFINE (or after autonomous HAND-OFF), `starter.html` is the chosen draft and `tokens.css` is the extracted token system. `/magic`'s STACK and BUILD phases consume these as the seed.
+`<project>/outputs/<slug>/` is the **per-run archive**. After a full `/magic` run, Phase 8 (Finalize) moves `seeds/*` and `memory/*` into a fresh archive dir named with the slug:
 
-The directory is regenerated each houdini run. Old drafts are overwritten.
+```
+outputs/
+├── <brief-slug>-2026-05-31-1147/     ← one dir per completed /magic run
+│   ├── seeds/                        ← snapshot of seeds/ that fed this build
+│   ├── memory/                       ← snapshot of memory/ for this build
+│   ├── [production files from BUILD] ← actual app/site files
+│   └── META.json                     ← { slug, intent, completed_at, flags, audit_gate, ... }
+├── <another-slug>-2026-05-31-1402/
+└── _orphans/                         ← auto-created when --use over non-empty seeds/ chooses orphan
+    └── 2026-05-31-1450/              ← timestamped move-aside of orphaned seeds
+```
+
+**Slug format**: `<brief-3-words-kebab-or-"auto">-YYYY-MM-DD-HHMM`. Examples: `dog-app-2026-05-31-1147`, `auto-2026-05-31-1147`, `fintech-dashboard-2026-05-31-1147`. Generated by the command layer (not the workflow — workflows can't use `Date.now()` because it breaks resume).
+
+**To re-iterate on a prior run**: `/magic --use <slug> "<new tweak>"` — repopulates `seeds/` and `memory/` from `outputs/<slug>/`, then runs again. Result lands in a new `outputs/<new-slug>/`.
 
 ---
 
@@ -329,11 +374,13 @@ presto/
 │   ├── design-taste-frontend/   ← bundled; page-level design skill
 │   ├── emil-design-eng/         ← bundled; component-level craft skill
 │   └── houdini/                 ← presto's own; creative partner orchestrator
-├── memory/                      ← persistent state (see Memory model)
+├── memory/                      ← active-run state (see Memory model); emptied by Finalize
 │   └── .gitkeep
-├── seeds/                       ← houdini design artifacts (see Hand-off artifacts)
+├── seeds/                       ← active workspace (user refs + houdini outputs); emptied by Finalize
 │   ├── .gitkeep
 │   └── README.md
+├── outputs/                     ← per-run archives; created lazily on first /magic completion
+│   └── .gitkeep                 (not bundled with the plugin — created in user's project on first run)
 ├── shared/
 │   ├── easing.css               ← emil's named easing curves as CSS custom properties
 │   └── preflight.mjs            ← taste's Pre-Flight matrix runner (Node ESM)
@@ -401,7 +448,7 @@ Two manifest files under `.claude-plugin/`:
 ```json
 {
   "name": "presto",
-  "version": "0.1.4",
+  "version": "0.1.7",
   "description": "Three production-grade design skills (impeccable, design-taste-frontend, emil-design-eng) stacked into one composable workflow, plus a fourth (houdini) for the cold-start blank canvas.",
   "author": { "name": "Brian Yu" },
   "repository": "https://github.com/brianyu18/presto",
@@ -504,6 +551,44 @@ If you want to add a fourth source skill (e.g., for accessibility):
 - **The cold-start framing** ("craft codes toward a concrete image, not an abstract brief; that is the step change") is lifted directly from impeccable.style/designing/#start. houdini exists to operationalize that insight.
 
 presto itself is a composition. Every individual rule in this plugin comes from one of the three source skills. presto only sequences them, persists their outputs, and adds houdini as the cold-start layer.
+
+---
+
+## What's new in v0.1.7
+
+The biggest single release since v0.1.0. Two bundles landed in one commit; the underlying model of presto changed.
+
+### Resource management — seeds/outputs split
+
+- **`seeds/` is single-purpose** active workspace (user refs + houdini outputs commingle here).
+- **`outputs/<slug>/` is the per-run archive** (snapshot of seeds + memory + production files + META.json).
+- **`<project>/seeds/` is YOUR project's seeds dir** (cwd-derived). presto lazy-creates seeds/, memory/, outputs/ on first run via `mkdir -p`.
+- **Run slug format**: `<brief-3-words>-YYYY-MM-DD-HHMM`. Travels with the run through `/houdini`, `/magic`, and into the archive.
+- **New Finalize phase** (phase 8) at the end of every full `/magic` run: moves `seeds/*` and `memory/*` into `outputs/<slug>/`, writes `META.json`. Working dirs end clean.
+- **All workflow paths are now project-relative**. No more hardcoded `/Users/...` constants; the workflow takes `args.project_root` from the command layer.
+
+### Flag expansion
+
+| Flag | Effect |
+|---|---|
+| `--useimg[-N]` | Drafter MAY embed up to N mood images as `<img>` tags (relative paths, on-brand only). Default: autonomous→2, others→0. `--useimg-0` explicitly disables. |
+| `--gen[-N]` | Override mood-board image count (1–5, default 3). Five ordered vantages: hero / lifestyle / detail / atmosphere / texture-fragment. |
+| `--nohoudini` | Skip Phase 0 entirely; requires `seeds/` non-empty. |
+| `--use <slug>` | Repopulate `seeds/` + `memory/` from `outputs/<slug>/`, then run. Implies `--nohoudini`. |
+
+Three syntactic forms per numeric flag: `--gen-4`, `--gen 4`, `--gen=4`.
+
+### Bring-your-own seed resources
+
+houdini's MoodBoard now scans `seeds/` for user-provided files (anything not a workflow-owned filename) at run start. When user refs exist, nanogen is skipped by default — refs become the mood board (palette + style tags extracted via `nanogen describe`). Pass `--gen-N` to augment: refs are moods 1..K, nanogen generates N additional moods that reference the user inputs.
+
+### Embed preservation chain through Build
+
+When the drafter embeds mood images, the Handoff phase records their relative paths in a `## Embedded mood images` section in `DESIGN_APPROACH.md`. `/magic` Build's new IMAGE PRESERVATION RULE reads that section and treats those `<img>` tags as intentional content during re-authoring — they survive the rewrite. Build reports preservation count in `BUILD.json` notes.
+
+### Workflow harness fix (load-bearing)
+
+Claude Code v2.1.158's workflow loader rejected presto's `export default async function ...()` wrappers (the body is compiled in `vm.Script`, which doesn't support module-level `export`). Stripped the wrappers; body is now top-level procedural code per the v2.1.158 contract. Without this fix, the entire `/magic` and `/houdini` workflow surface was unrunnable.
 
 ---
 

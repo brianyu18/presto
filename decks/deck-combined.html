@@ -931,6 +931,7 @@
       <div class="fstep"><span class="n">05</span><div><h4>Build with the rules</h4><p>Impeccable's General Rules + register reference. Taste's hero discipline, eyebrow restraint, no-section-repeat. OKLCH throughout.</p></div><span class="by">impeccable + taste</span></div>
       <div class="fstep"><span class="n">06</span><div><h4>Polish every interaction</h4><p>For each animation: should it · purpose · easing · duration. Custom curves. scale(0.97) on :active. Popovers from origin. Asymmetric enter/exit. Reduced-motion always.</p></div><span class="by">emil</span></div>
       <div class="fstep"><span class="n">07</span><div><h4>Audit before ship</h4><p>Pre-Flight checklist · AI slop test (both altitudes) · emil's review table on the diff. Match-and-rewrite any ban.</p></div><span class="by">all three</span></div>
+      <div class="fstep"><span class="n">08</span><div><h4>Finalize the run</h4><p>Move <code>seeds/</code> + <code>memory/</code> into <code>outputs/&lt;slug&gt;/</code>, write <code>META.json</code>. Working dirs end clean; the run is permanently archived for <code>/magic --use &lt;slug&gt;</code> iteration later.</p></div><span class="by">finalize</span></div>
     </div>
   </section>
 
@@ -1240,19 +1241,20 @@
       <div class="fstep"><span class="n">05</span><div><h4>BUILD</h4><p>General Rules + hero discipline + section grammar. Coordinated; no race condition because altitudes don't overlap. Output: <code>{ files_written[], notes }</code>.</p></div><span class="by">impeccable + taste</span></div>
       <div class="fstep"><span class="n">06</span><div><h4>POLISH</h4><p>Animation Decision Framework on every interaction. Custom curves, asymmetric enter/exit, transform-origin honored, scale(0.97) on :active. Output: <code>{ animations[], review_table_md }</code>.</p></div><span class="by">emil</span></div>
       <div class="fstep"><span class="n">07</span><div><h4>AUDIT</h4><p>All three skills run in parallel — Pre-Flight matrix, AI slop test (first + second order), emil review table. Output: <code>{ preflight_pass, slop_pass, review_findings, gate }</code>.</p></div><span class="by">all three · parallel</span></div>
+      <div class="fstep"><span class="n">08</span><div><h4>FINALIZE</h4><p>Move <code>seeds/*</code> + <code>memory/*</code> into <code>outputs/&lt;slug&gt;/</code>; write <code>META.json</code> with slug, intent, timestamp, flags, audit gate. Working dirs end empty. Output: <code>{ moved_paths, output_dir, meta_path }</code>.</p></div><span class="by">finalize agent</span></div>
     </div>
 
     <div class="cmds" style="margin-top: 12px;">
       <div class="cmd">
         <span class="phase">Phase 00 · cold start</span>
-        <span class="name">houdini [brief] [--nogen]</span>
-        <p>The creative partner. Three modes: guided (conversational, default), <code>--auto</code> (autonomous solo run), or keywords (e.g. <code>'fintech, dark, terminal'</code>). When invoked without explicit args, TUNE IN asks which mode via <code>AskUserQuestion</code>. MOOD generates 3 inspiration images via nanogen and passes a visual_direction_summary to the drafters. Add <code>--nogen</code> to skip MOOD (no Gemini draw).</p>
+        <span class="name">houdini [brief] [--auto|kw,kw,kw] [--nogen|--gen[-N]] [--useimg[-N]]</span>
+        <p>The creative partner. Three modes: guided (conversational, default), <code>--auto</code> (autonomous solo run), or keywords (e.g. <code>'fintech, dark, terminal'</code>). When invoked without explicit args, TUNE IN asks which mode via <code>AskUserQuestion</code>. MOOD scans <code>seeds/</code> for user-supplied refs first; if present they become the mood board (no nanogen). Otherwise nanogen generates <code>--gen-N</code> images (default 3, cap 5). <code>--useimg-N</code> lets the drafter embed up to N mood images as real <code>&lt;img&gt;</code> tags. <code>--nogen</code> skips MOOD entirely.</p>
         <span class="chain">taste + impeccable + nanogen</span>
       </div>
       <div class="cmd">
         <span class="phase">Entry</span>
-        <span class="name">magic [intent] [--surprise] [--nogen]</span>
-        <p>Full 7-phase flow. Without <code>--surprise</code>: detects cold-start and confirms whether to run <code>/houdini</code> first. With <code>--surprise</code>: autonomously runs houdini in wildcard mode, writes the hand-off artifacts, then proceeds through every phase. <code>--nogen</code> composes with any mode and forwards to houdini so MOOD is skipped. Phase outputs persist to <code>presto/memory/</code>.</p>
+        <span class="name">magic [intent] [--surprise|--guided|--nohoudini|--use slug] [--nogen|--gen[-N]] [--useimg[-N]]</span>
+        <p>Full 9-phase flow (Houdini → Read → Context → Dials → Stack → Build → Polish → Audit → Finalize). Five modes: default (1 prompt cold-start gate), <code>--surprise</code> (0 prompts, autonomous), <code>--guided</code> (pause per phase), <code>--nohoudini</code> (skip cold-start, requires <code>seeds/</code> non-empty), <code>--use &lt;slug&gt;</code> (re-iterate on prior <code>outputs/&lt;slug&gt;/</code>). Image flags (<code>--nogen</code>, <code>--gen[-N]</code>, <code>--useimg[-N]</code>) are orthogonal and forward to every houdini invocation. presto auto-creates <code>seeds/</code> + <code>memory/</code> + <code>outputs/</code> in the user's cwd on first run; Finalize moves them into <code>outputs/&lt;slug&gt;/</code> at the end of full runs.</p>
         <span class="chain">all three</span>
       </div>
       <div class="cmd">
@@ -1388,7 +1390,7 @@
   <!-- 12d — Posture matrix: every mode with and without --nogen -->
   <section id="s12d" class="slide">
     <h2>Posture matrix.</h2>
-    <p>Every mode pairs with a <code>--nogen</code> variant. Same path, MOOD skipped, no Gemini image-gen draw. Use it when quota is hit, when iterating fast, or for text-only exploration.</p>
+    <p>Every mode pairs with image-side flag variants. <code>--nogen</code> skips MOOD entirely. <code>--gen-N</code> overrides image count (1–5). <code>--useimg-N</code> lets the drafter embed mood images as real content. <code>--nohoudini</code> + <code>--use &lt;slug&gt;</code> hand magic a pre-existing seed instead of cold-starting via houdini.</p>
     <table class="conf" aria-label="Posture matrix — modes with and without --nogen">
       <thead>
         <tr><th>Command</th><th>Prompts</th><th>When to use</th><th>Image gen</th></tr>
@@ -1465,6 +1467,30 @@
           <td>zero</td>
           <td>Keyword seed, text-only. Faster iteration.</td>
           <td>no</td>
+        </tr>
+        <tr>
+          <td><code>/magic --surprise --useimg-2 --gen-4</code></td>
+          <td>zero</td>
+          <td>Validation combo. Gen 4 mood images, drafter embeds up to 2, Build preserves.</td>
+          <td class="win">yes · 4 mood images</td>
+        </tr>
+        <tr>
+          <td><code>/magic --nohoudini &lt;intent&gt;</code></td>
+          <td>zero</td>
+          <td>You've put refs in <code>seeds/</code>. Skip cold-start; Build directly on your seed.</td>
+          <td>refs only (no nanogen)</td>
+        </tr>
+        <tr>
+          <td><code>/magic --use &lt;slug&gt; &lt;intent&gt;</code></td>
+          <td>zero or one (only on seed conflict)</td>
+          <td>Iterate on a prior <code>outputs/&lt;slug&gt;/</code> archive. Repopulates seeds from snapshot.</td>
+          <td>reuses prior mood board</td>
+        </tr>
+        <tr>
+          <td><code>/houdini</code> with user refs in <code>seeds/</code></td>
+          <td>guided · per-phase</td>
+          <td>Bring-your-own. nanogen skipped by default; pass <code>--gen-N</code> to augment.</td>
+          <td>refs only (or augment with --gen-N)</td>
         </tr>
       </tbody>
     </table>
