@@ -10,20 +10,43 @@ argument-hint: "[brief | --auto [safe|contrarian|wildcard] | \"kw1, kw2, kw3\"] 
 
 Inspired by impeccable.style/designing: "craft codes toward a concrete image, not an abstract brief; that is the step change."
 
-## Pre-run setup (every invocation, before mode detection)
+## Pre-run setup (every invocation, before mode detection — DO THIS FIRST)
 
-1. **Resolve project root.** Use Bash to run `pwd` and capture the absolute path as `PROJECT_ROOT`. presto is intended to be used inside a user's project — paths must derive from the user's cwd, not the plugin install location.
+**THIS BLOCK IS A HARD GATE. Execute steps 1–3 via the Bash tool BEFORE invoking the houdini workflow. The workflow throws on startup if `project_root` is missing or empty. Do NOT guess the cwd, do NOT use a remembered path, do NOT use the presto plugin install location.**
 
-2. **Lazy-init the working dirs.** Run `mkdir -p "$PROJECT_ROOT/seeds" "$PROJECT_ROOT/memory" "$PROJECT_ROOT/outputs"` (idempotent). On first run in a project, log a one-liner like "Created seeds/ + memory/ + outputs/ in <PROJECT_ROOT>" so the user knows the project was just provisioned.
+### Step 1 — Capture the live cwd
 
-3. **Generate a run slug.** The slug names this houdini run's output and travels with it through any later `/magic` invocation. Format: `<brief-3-words-kebab-or-"auto">-YYYY-MM-DD-HHMM`.
-   - If `$ARGUMENTS` (after stripping flags) contains a brief, take its first 3 word-tokens, lowercase, replace non-alphanumeric with `-`, collapse `-+` to single, trim leading/trailing `-`. Fall back to `auto` if the slug is empty.
-   - For `--auto` or empty-brief invocations, use `auto`.
-   - Append a timestamp via Bash: `date +%Y-%m-%d-%H%M`.
-   - Example: `dog-app-2026-05-31-1147`, `auto-2026-05-31-1147`, `fintech-dashboard-2026-05-31-1147`.
-   - Capture as `RUN_SLUG`.
+Run this Bash command verbatim and capture stdout:
 
-4. **Pass both into the workflow.** Every Workflow tool invocation in this command must include `"project_root": "<PROJECT_ROOT>", "run_slug": "<RUN_SLUG>"` in args alongside the brief, autonomous flag, keywords, etc.
+```sh
+pwd
+```
+
+Assign the result to `PROJECT_ROOT`. It MUST be an absolute path. Echo back to the user: `presto: running in <PROJECT_ROOT>` so they can verify before the run kicks off. If `PROJECT_ROOT` does not match where the user expects to be working, STOP and ask before proceeding.
+
+### Step 2 — Lazy-init working dirs
+
+```sh
+mkdir -p "$PROJECT_ROOT/seeds" "$PROJECT_ROOT/memory" "$PROJECT_ROOT/outputs"
+```
+
+On first run in a project, log "presto: created seeds/ + memory/ + outputs/ in `$PROJECT_ROOT`".
+
+### Step 3 — Generate `RUN_SLUG`
+
+Format: `<brief-3-words-kebab-or-"auto">-YYYY-MM-DD-HHMM`. Take the first 3 word-tokens of the brief (after stripping flags), lowercase, non-alphanumeric → `-`, collapse repeats, trim leading/trailing `-`. Fall back to `auto` for empty briefs or `--auto` invocations. Append `-$(date +%Y-%m-%d-%H%M)`. Capture as `RUN_SLUG`.
+
+### Step 4 — Pass both into the workflow
+
+Every Workflow tool invocation in this command MUST include the captured literal values in args:
+
+```json
+{ "project_root": "<PROJECT_ROOT value from step 1>",
+  "run_slug": "<RUN_SLUG value from step 3>",
+  ... }
+```
+
+If either is omitted or empty, the workflow throws on startup. No silent fallback.
 
 ## Mode detection
 

@@ -8,6 +8,9 @@ seeds/mood-*.png
 !seeds/.gitkeep
 !seeds/README.md
 
+# Per-run archives created by /magic Finalize phase. Runtime only.
+outputs/
+
 # macOS
 .DS_Store
 

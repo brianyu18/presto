@@ -1,6 +1,6 @@
 {
   "name": "presto",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "description": "Three production-grade design skills (impeccable, design-taste-frontend, emil-design-eng) stacked into one composable workflow, plus a fourth (houdini) for the cold-start blank canvas. Includes the nanogen MCP server for Gemini image generation. Run /magic to go end to end, /houdini to cold-start, or any of eight standalone break-out commands.",
   "author": { "name": "Brian Yu" },
   "repository": "https://github.com/brianyu18/presto",

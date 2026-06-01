@@ -185,15 +185,37 @@ const AUDIT_SCHEMA = {
 // compiles the remaining body in a vm context that does NOT support module-level
 // exports. See the o0() loader in claude-code internals for the contract.
 
-  const intent = args?.intent ?? '';
-  const skipTo = args?.skipTo ?? null;
-  const mode = args?.mode ?? 'full';
-  const startHook = args?.startHook ?? 'auto';
-  const skipImageGen = args?.skip_image_gen === true;
+  // Normalize args. Claude Code v2.1.158's Workflow harness delivers `args` as a
+  // JSON-encoded STRING, not an object — even though the tool docs say "pass as a
+  // JSON value". We parse here to recover the object so ARGS.project_root etc. work.
+  // Both shapes are accepted in case a future version flips this back to native objects.
+  const RAW_ARGS = args;
+  let ARGS;
+  if (typeof RAW_ARGS === 'string') {
+    try {
+      ARGS = JSON.parse(RAW_ARGS);
+    } catch (e) {
+      throw new Error(
+        `magic workflow: args arrived as a string but is not valid JSON. snippet=${String(RAW_ARGS).slice(0, 400)}`
+      );
+    }
+  } else if (RAW_ARGS && typeof RAW_ARGS === 'object') {
+    ARGS = RAW_ARGS;
+  } else {
+    throw new Error(`magic workflow: args is neither object nor JSON string (got ${typeof RAW_ARGS}).`);
+  }
+
+  const intent = ARGS.intent ?? '';
+  const skipTo = ARGS.skipTo ?? null;
+  const mode = ARGS.mode ?? 'full';
+  const startHook = ARGS.startHook ?? 'auto';
+  const skipImageGen = ARGS.skip_image_gen === true;
   const shouldRun = (name) => !skipTo || skipTo === name || phaseIndex(name) >= phaseIndex(skipTo);
 
   // Resolve project-relative paths once per run.
-  const PATHS = resolvePaths(args?.project_root, args?.run_slug);
+  const PATHS = resolvePaths(ARGS.project_root, ARGS.run_slug);
+  log(`magic: project_root=${PATHS.projectRoot} run_slug=${PATHS.runSlug}`);
+  log(`magic: writing to seeds=${PATHS.seedsDir} memory=${PATHS.memoryDir} output=${PATHS.outputDir}`);
 
   let houdini = null, read, context, dials, stack, build, polish, audit;
 
@@ -309,13 +331,17 @@ const AUDIT_SCHEMA = {
       `\n` +
       `Write list of files_written and brief notes to ${PATHS.memoryDir}/BUILD.json using your Write tool. In notes, explicitly state how many embedded mood images were preserved (e.g. "preserved 2 of 2 embedded mood images" or "no embedded images to preserve").`;
 
-    build = await pipeline(
-      [
-        { name: 'scaffold', prompt: buildBrief + `\nSTEP: scaffold the markup and primary CSS. Use the Write tool.`, schema: BUILD_SCHEMA, phase: 'Build' },
-        { name: 'wire',     prompt: buildBrief + `\nSTEP: wire interactions, data, and content. Use the Write tool.`, schema: BUILD_SCHEMA, phase: 'Build' },
-      ],
-      { label: 'build', merge: 'last' }
+    // Build is two sequential agents (scaffold first, then wire over the scaffold).
+    // The original spec-object pipeline() API is gone; use two awaited agent() calls.
+    const scaffold = await agent(
+      buildBrief + `\nSTEP: scaffold the markup and primary CSS. Use the Write tool.`,
+      { schema: BUILD_SCHEMA, label: 'build-scaffold', phase: 'Build' }
     );
+    const wire = await agent(
+      buildBrief + `\nSTEP: wire interactions, data, and content on top of the scaffold (which has already been written). Use the Write tool. Scaffold output: ${JSON.stringify(scaffold)}.`,
+      { schema: BUILD_SCHEMA, label: 'build-wire', phase: 'Build' }
+    );
+    build = wire; // final state of files
   }
 
   // ---------- 6. POLISH ----------
@@ -335,22 +361,24 @@ const AUDIT_SCHEMA = {
   if (shouldRun('Audit')) {
     const auditBundle = JSON.stringify({ read, context, dials, stack, build, polish });
 
+    // parallel() expects an array of THUNKS (() => Promise), not already-invoked promises.
+    // Wrap each agent() call in an arrow that returns the promise on demand.
     const [preflight, slop, review] = await parallel([
-      agent(
+      () => agent(
         `OWNER: design-taste-frontend. Run the mechanical Pre-Flight Check matrix from SKILL.md Section 14 (~55 checkboxes) against the build.\n` +
         `Bundle: ${auditBundle}.\n` +
         `Return preflight_pass + any failing items as review_findings (severity: 'block' if it violates the matrix).\n` +
         `Write to ${PATHS.memoryDir}/audit-preflight.json.`,
         { schema: AUDIT_SCHEMA, label: 'audit-preflight', phase: 'Audit' }
       ),
-      agent(
+      () => agent(
         `OWNER: impeccable. Run the AI slop test (first-order + second-order) from SKILL.md against the build.\n` +
         `Bundle: ${auditBundle}.\n` +
         `Return slop_pass and any flagged patterns as review_findings (severity: 'block' for first-order slop, 'warn' for second-order).\n` +
         `Write to ${PATHS.memoryDir}/audit-slop.json.`,
         { schema: AUDIT_SCHEMA, label: 'audit-slop', phase: 'Audit' }
       ),
-      agent(
+      () => agent(
         `OWNER: emil-design-eng. Produce the mandatory review-as-markdown-table review against the polish output.\n` +
         `Bundle: ${auditBundle}.\n` +
         `Return review_findings keyed by severity; preflight_pass/slop_pass may be left true (other agents own them).\n` +
@@ -380,16 +408,16 @@ const AUDIT_SCHEMA = {
     // when the full pipeline ran (mode='full', no skipTo, not opt-out via args.finalize=false).
     // Break-out commands (/design-read, /design-audit, etc.) suppress this by setting
     // skipTo or finalize=false so partial runs don't archive prematurely.
-    const shouldFinalize = (args?.finalize !== false) && mode === 'full' && !skipTo;
+    const shouldFinalize = (ARGS.finalize !== false) && mode === 'full' && !skipTo;
     let finalization = null;
     if (shouldFinalize) {
       phase('Finalize');
       const flagSummary = {
         skip_image_gen: skipImageGen,
-        mood_board_count: args?.mood_board_count ?? null,
-        embed_images: args?.embed_images ?? null,
-        nohoudini: args?.nohoudini === true,
-        use_slug: typeof args?.use_slug === 'string' ? args.use_slug : null,
+        mood_board_count: ARGS.mood_board_count ?? null,
+        embed_images: ARGS.embed_images ?? null,
+        nohoudini: ARGS.nohoudini === true,
+        use_slug: typeof ARGS.use_slug === 'string' ? ARGS.use_slug : null,
       };
       const finalizePrompt =
         `OWNER: magic finalization. You are NOT making creative decisions — you are PERSISTING this run's working artifacts into the run's permanent output directory so the next run starts with a clean seeds/ workspace.\n` +
@@ -421,7 +449,7 @@ const AUDIT_SCHEMA = {
         `STEP 5. Return JSON: moved_paths (array of absolute paths of every file moved, both seeds and memory), output_dir (${JSON.stringify(PATHS.outputDir)}), meta_path (${JSON.stringify(PATHS.metaPath)}), notes (one short line: "moved N files from seeds/ + M files from memory/ into <slug>/" or any caveats).`;
       finalization = await agent(finalizePrompt, { schema: FINALIZATION_SCHEMA, label: 'finalize', phase: 'Finalize' });
     } else {
-      log(`Finalize skipped (mode=${mode}, skipTo=${skipTo ?? 'null'}, finalize=${args?.finalize ?? 'default'}). seeds/ and memory/ left in place.`);
+      log(`Finalize skipped (mode=${mode}, skipTo=${skipTo ?? 'null'}, finalize=${ARGS.finalize ?? 'default'}). seeds/ and memory/ left in place.`);
     }
 
     return { houdini, read, context, dials, stack, build, polish, audit, gate, finalization, skip_image_gen: skipImageGen };
@@ -440,11 +468,26 @@ function phaseIndex(name) {
   return i === -1 ? 0 : i;
 }
 
-// Path resolver. project_root is passed by the command markdown; falls back to the
-// presto repo root (inlined) for ad-hoc Workflow tool invocations.
+// Path resolver. project_root is passed by the command markdown.
+// HARD CONTRACT: project_root must be a non-empty absolute path. No silent fallback —
+// a missing or empty project_root used to fall back to the presto repo, which caused
+// runs invoked from other projects to write into presto/ instead of the user's cwd
+// (v0.1.7 regression). Throw loudly so the bug is visible at workflow startup.
 function resolvePaths(projectRoot, runSlug) {
-  const fallback = '/Users/brian/Desktop/claude-projects/presto';
-  const root = (typeof projectRoot === 'string' && projectRoot.length > 0) ? projectRoot : fallback;
+  if (typeof projectRoot !== 'string' || projectRoot.length === 0) {
+    throw new Error(
+      'resolvePaths: args.project_root is required (got "' + String(projectRoot) + '"). ' +
+      'The command markdown must capture `pwd` via Bash and pass it as project_root in the Workflow args. ' +
+      'Without this, the workflow has no way to know the user\'s cwd and would silently write to the wrong directory.'
+    );
+  }
+  if (!projectRoot.startsWith('/')) {
+    throw new Error(
+      'resolvePaths: args.project_root must be an absolute path (got "' + projectRoot + '"). ' +
+      'Use `pwd` (absolute) not a relative path.'
+    );
+  }
+  const root = projectRoot;
   const slug = (typeof runSlug === 'string' && runSlug.length > 0) ? runSlug : 'unnamed-run';
   return {
     projectRoot: root,

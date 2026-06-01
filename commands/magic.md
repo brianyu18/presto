@@ -8,17 +8,57 @@ argument-hint: "[intent] [--surprise | --guided] [--nogen | --gen[-N]] [--useimg
 
 Kick off the full presto workflow. Three skills (impeccable, design-taste-frontend, emil-design-eng) coordinate across 8 phases with a single owner per phase. Phase 0 (HOUDINI) is optional and only fires on cold-start briefs.
 
-## Pre-run setup (every invocation, before flag parsing)
+## Pre-run setup (every invocation, before flag parsing — DO THIS FIRST)
 
-1. **Resolve project root.** Use Bash to run `pwd` and capture as `PROJECT_ROOT`. presto is per-project; all paths derive from the user's cwd, not the plugin install location.
+**THIS BLOCK IS A HARD GATE. You MUST execute steps 1–4 via the Bash tool BEFORE invoking the Workflow tool. The workflow will throw an error on startup if `project_root` is missing or invalid. Do NOT guess the cwd; do NOT use a remembered path from a prior session; do NOT use `/Users/brian/Desktop/claude-projects/presto` unless that is genuinely the user's current cwd.**
 
-2. **Lazy-init the working dirs.** Run `mkdir -p "$PROJECT_ROOT/seeds" "$PROJECT_ROOT/memory" "$PROJECT_ROOT/outputs"` (idempotent). On first run in a project, log "Created seeds/ + memory/ + outputs/ in <PROJECT_ROOT>".
+### Step 1 — Capture the live cwd
 
-3. **Generate `RUN_SLUG`.** Format `<brief-3-words-kebab-or-"auto">-YYYY-MM-DD-HHMM`. From `$ARGUMENTS` after flag-strip, take first 3 word-tokens, lowercase, replace non-alphanumeric with `-`, collapse repeats, trim. Fall back to `auto` if empty. Append `-$(date +%Y-%m-%d-%H%M)`.
+Run this Bash command verbatim and capture stdout:
 
-4. **Pre-create the output dir.** Run `mkdir -p "$PROJECT_ROOT/outputs/$RUN_SLUG/seeds" "$PROJECT_ROOT/outputs/$RUN_SLUG/memory"`. Build phase writes production files into `$PROJECT_ROOT/outputs/$RUN_SLUG/` and Finalize moves the seeds + memory snapshots in.
+```sh
+pwd
+```
 
-5. **Pass into every Workflow call** in this command: include `"project_root": "<PROJECT_ROOT>", "run_slug": "<RUN_SLUG>"` in args. The workflow uses both to compute all paths.
+Assign the result to `PROJECT_ROOT`. It MUST be an absolute path (starts with `/`). Echo the captured value back to the user once at the top of your response: `presto: running in <PROJECT_ROOT>` so they can verify the cwd is correct before the run kicks off. If `PROJECT_ROOT` does not match the directory the user expected, STOP and ask them to confirm before proceeding.
+
+### Step 2 — Lazy-init working dirs
+
+```sh
+mkdir -p "$PROJECT_ROOT/seeds" "$PROJECT_ROOT/memory" "$PROJECT_ROOT/outputs"
+```
+
+Idempotent. On first run in a project, log "presto: created seeds/ + memory/ + outputs/ in `$PROJECT_ROOT`".
+
+### Step 3 — Generate `RUN_SLUG`
+
+Format `<brief-3-words-kebab-or-"auto">-YYYY-MM-DD-HHMM`. Compute via Bash:
+
+```sh
+RUN_SLUG="<brief-derived-or-auto>-$(date +%Y-%m-%d-%H%M)"
+```
+
+Where `<brief-derived-or-auto>` is the first 3 word-tokens of the cleaned intent, lowercased, non-alphanumeric → `-`, repeats collapsed, trimmed; fall back to `auto` if empty.
+
+### Step 4 — Pre-create the output dir
+
+```sh
+mkdir -p "$PROJECT_ROOT/outputs/$RUN_SLUG/seeds" "$PROJECT_ROOT/outputs/$RUN_SLUG/memory"
+```
+
+Build writes production files into `$PROJECT_ROOT/outputs/$RUN_SLUG/`; Finalize moves seeds + memory snapshots in.
+
+### Step 5 — Pass both into every Workflow call
+
+Every Workflow tool invocation in this command MUST include the captured values in args (literal substitution, not placeholder text):
+
+```json
+{ "project_root": "<PROJECT_ROOT value from step 1>",
+  "run_slug": "<RUN_SLUG value from step 3>",
+  ... }
+```
+
+If either is omitted or empty, the workflow throws `resolvePaths: args.project_root is required` and the run aborts before doing anything. That's intentional — silent fallback to a hardcoded path caused a real regression in v0.1.7 and is now disallowed.
 
 ## Behavior
 

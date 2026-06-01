@@ -229,14 +229,26 @@ const ANGLE_OVERRIDE_MAP = {
   wildcard: 'wildcard overcommit',
 };
 
-// Path resolver. project_root is passed by the command markdown; falls back to the
-// presto repo root (inlined) for ad-hoc Workflow tool invocations that omit it.
-// Note: keep this a function declaration (hoisted) with the fallback INLINED — the
-// workflow body above runs in source order and would TDZ-error against any top-level
-// `const` referenced from inside the function.
+// Path resolver. project_root is passed by the command markdown.
+// HARD CONTRACT: project_root must be a non-empty absolute path. No silent fallback —
+// a missing or empty project_root used to fall back to the presto repo, which caused
+// runs invoked from other projects to write into presto/ instead of the user's cwd
+// (v0.1.7 regression). Throw loudly so the bug is visible at workflow startup.
+// Keep this a function declaration (hoisted) — the body above runs in source order
+// and would TDZ-error against any top-level `const` referenced from inside the function.
 function resolvePaths(projectRoot) {
-  const fallback = '/Users/brian/Desktop/claude-projects/presto';
-  const root = (typeof projectRoot === 'string' && projectRoot.length > 0) ? projectRoot : fallback;
+  if (typeof projectRoot !== 'string' || projectRoot.length === 0) {
+    throw new Error(
+      'houdini.js resolvePaths: args.project_root is required (got "' + String(projectRoot) + '"). ' +
+      'The command markdown must capture `pwd` via Bash and pass it as project_root in the Workflow args.'
+    );
+  }
+  if (!projectRoot.startsWith('/')) {
+    throw new Error(
+      'houdini.js resolvePaths: args.project_root must be an absolute path (got "' + projectRoot + '").'
+    );
+  }
+  const root = projectRoot;
   return {
     projectRoot: root,
     seedsDir: `${root}/seeds`,
@@ -266,21 +278,38 @@ const DRAFT_RULES = [
 // Claude Code's workflow loader strips the meta export and compiles the
 // remaining body in a vm context that does NOT support module-level exports.
 
+  // Normalize args. Claude Code v2.1.158's Workflow harness delivers `args` as a
+  // JSON-encoded STRING, not an object — even though the tool docs imply object.
+  // Parse here to recover the object so ARGS.project_root etc. work. Accept either
+  // shape in case a future harness flips back to native objects.
+  let ARGS;
+  if (typeof args === 'string') {
+    try { ARGS = JSON.parse(args); }
+    catch (e) {
+      throw new Error(`houdini workflow: args arrived as a string but is not valid JSON. snippet=${String(args).slice(0, 400)}`);
+    }
+  } else if (args && typeof args === 'object') {
+    ARGS = args;
+  } else {
+    throw new Error(`houdini workflow: args is neither object nor JSON string (got ${typeof args}).`);
+  }
+
   // Resolve project-relative paths once per run. project_root is passed by the
-  // command markdown; falls back to DEFAULT_PROJECT_ROOT for ad-hoc Workflow tool calls.
-  const PATHS = resolvePaths(args?.project_root);
+  // command markdown. Throws if missing — no silent fallback.
+  const PATHS = resolvePaths(ARGS.project_root);
   const SEEDS_DIR = PATHS.seedsDir;
   const STARTER_PATH = PATHS.starterPath;
   const TOKENS_PATH = PATHS.tokensPath;
   const DESIGN_APPROACH_PATH = PATHS.designApproachPath;
+  log(`houdini: project_root=${PATHS.projectRoot} seeds_dir=${SEEDS_DIR}`);
 
-  const brief = args?.brief ?? '';
-  const designRead = args?.design_read ?? '';
-  const constraints = args?.constraints ?? '';
-  const visualBrief = typeof args?.visual_brief === 'string' ? args.visual_brief : '';
-  const autonomous = args?.autonomous === true;
-  const skipImageGen = args?.skip_image_gen === true;
-  const keywords = Array.isArray(args?.keywords) ? args.keywords.filter((k) => typeof k === 'string' && k.trim().length > 0) : [];
+  const brief = ARGS.brief ?? '';
+  const designRead = ARGS.design_read ?? '';
+  const constraints = ARGS.constraints ?? '';
+  const visualBrief = typeof ARGS.visual_brief === 'string' ? ARGS.visual_brief : '';
+  const autonomous = ARGS.autonomous === true;
+  const skipImageGen = ARGS.skip_image_gen === true;
+  const keywords = Array.isArray(ARGS.keywords) ? ARGS.keywords.filter((k) => typeof k === 'string' && k.trim().length > 0) : [];
   const hasKeywords = keywords.length > 0;
   const hasVisualBrief = visualBrief.trim().length > 0;
 
@@ -289,10 +318,10 @@ const DRAFT_RULES = [
 
   // ---------- Flag resolution: mood_board_count + embed_images ----------
   // Tracks whether each was explicit so we know when to auto-bump vs warn.
-  const moodCountExplicit = Number.isInteger(args?.mood_board_count);
-  const embedExplicit = Number.isInteger(args?.embed_images);
+  const moodCountExplicit = Number.isInteger(ARGS.mood_board_count);
+  const embedExplicit = Number.isInteger(ARGS.embed_images);
 
-  let moodCount = moodCountExplicit ? args.mood_board_count : 3;
+  let moodCount = moodCountExplicit ? ARGS.mood_board_count : 3;
   if (moodCount < 1) moodCount = 1;
   if (moodCount > 5) {
     log(`WARN: --gen ${moodCount} exceeds cap of 5; clamping to 5.`);
@@ -300,7 +329,7 @@ const DRAFT_RULES = [
   }
 
   // embed_images default: autonomous → 2, else → 0. Explicit value (incl. 0) wins.
-  let embedCount = embedExplicit ? args.embed_images : (autonomous ? 2 : 0);
+  let embedCount = embedExplicit ? ARGS.embed_images : (autonomous ? 2 : 0);
   if (embedCount < 0) embedCount = 0;
 
   // Safety A: --nogen wins over --useimg.
@@ -328,18 +357,18 @@ const DRAFT_RULES = [
   }
 
   // n_drafts: autonomous mode forces 1; otherwise honor caller (default 3).
-  const requestedN = Number.isInteger(args?.n_drafts) ? args.n_drafts : 3;
+  const requestedN = Number.isInteger(ARGS.n_drafts) ? ARGS.n_drafts : 3;
   const nDrafts = autonomous ? 1 : requestedN;
 
   // Angle resolution.
   let angles;
   if (autonomous) {
-    const overrideKey = typeof args?.angle_override === 'string' ? args.angle_override : 'wildcard';
+    const overrideKey = typeof ARGS.angle_override === 'string' ? ARGS.angle_override : 'wildcard';
     const resolvedAngle = ANGLE_OVERRIDE_MAP[overrideKey] ?? ANGLE_OVERRIDE_MAP.wildcard;
     angles = [resolvedAngle];
   } else {
-    const requestedAngles = Array.isArray(args?.angles) && args.angles.length > 0
-      ? args.angles
+    const requestedAngles = Array.isArray(ARGS.angles) && ARGS.angles.length > 0
+      ? ARGS.angles
       : DEFAULT_ANGLES;
     angles = [];
     for (let i = 0; i < nDrafts; i++) {
@@ -553,7 +582,13 @@ const DRAFT_RULES = [
     };
   });
 
-  const draftsRaw = await parallel(draftSteps, { label: 'drafts', merge: 'all' });
+  // parallel() expects an array of THUNKS, not spec objects. Wrap each draftStep
+  // into a thunk that invokes agent() with the step's prompt + schema + label/phase.
+  const draftThunks = draftSteps.map((step) => () => agent(
+    step.prompt,
+    { schema: step.schema, label: step.name, phase: step.phase ?? 'Draft' }
+  ));
+  const draftsRaw = await parallel(draftThunks);
   const draftsArray = Array.isArray(draftsRaw) ? draftsRaw : [draftsRaw];
   const drafts = draftsArray.filter((d) => d && typeof d === 'object' && d.draft_file_path);
 
