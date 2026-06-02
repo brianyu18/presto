@@ -229,6 +229,170 @@ const ANGLE_OVERRIDE_MAP = {
   wildcard: 'wildcard overcommit',
 };
 
+// ---------- Palette family axis ----------
+// Perpendicular to `angle`. Angle controls vibe/conviction; palette_family controls
+// the OKLCH color world the drafter commits to. The two compose: angle=wildcard +
+// palette_family=phosphor-terminal is a deliberately overcommitted phosphor-green
+// world; angle=safe + palette_family=warm-editorial is a tasteful cream-and-ink page.
+//
+// Each entry is { key, label, brief, examples } where:
+//   brief    — what the drafter must commit to (1-2 sentences, OKLCH-flavored)
+//   examples — 2-3 OKLCH triplets that EXEMPLIFY the family without dictating it
+const PALETTE_FAMILIES = {
+  'industrial-mono': {
+    key: 'industrial-mono',
+    label: 'Industrial monochrome',
+    brief: 'Near-black ink on cool gray paper with one cold accent. OKLCH grayscale ladder + a single saturated chroma at ~210-260 hue. The world is hardware schematics, engineering one-sheets, NASA technical reports.',
+    examples: ['oklch(18% 0.005 240)', 'oklch(96% 0.004 240)', 'oklch(52% 0.18 230)'],
+  },
+  'warm-editorial': {
+    key: 'warm-editorial',
+    label: 'Warm editorial',
+    brief: 'Ink on warm paper at hue 70-90, with one spot color (red, orange, or olive) as the single accent. The world is print magazines, 1930s playbills, Tufte first editions. Calm, generous gutters, type-led.',
+    examples: ['oklch(22% 0.015 70)', 'oklch(94% 0.020 78)', 'oklch(56% 0.21 27)'],
+  },
+  'electric-acid': {
+    key: 'electric-acid',
+    label: 'Electric / acid',
+    brief: 'Black or near-black background with one extremely saturated single accent at the edge of OKLCH gamut (electric lime ~140, sulfur yellow ~95, hot magenta ~340). No second accent. The world is rave flyers, deadmau5 stage design, FACT magazine.',
+    examples: ['oklch(14% 0.01 0)', 'oklch(96% 0.02 100)', 'oklch(78% 0.32 142)'],
+  },
+  'deep-jewel': {
+    key: 'deep-jewel',
+    label: 'Deep jewel',
+    brief: 'Mid-to-deep saturated palette built from 2-3 jewel tones (emerald ~150, sapphire ~250, amethyst ~310, garnet ~20) at chroma 0.1-0.18 against an ink or cream surface. The world is Aesop, Le Labo, Loewe, A24 horror posters.',
+    examples: ['oklch(28% 0.10 150)', 'oklch(36% 0.14 310)', 'oklch(92% 0.02 80)'],
+  },
+  'washed-pastel': {
+    key: 'washed-pastel',
+    label: 'Washed pastel',
+    brief: 'High-lightness low-chroma palette (L 88-96, C 0.02-0.06) where two or three pastels share gutter space without one dominating. Inks are warm grays, not black. The world is Risograph zines, Japanese stationery, Werkstätte, watercolor studies.',
+    examples: ['oklch(92% 0.04 28)', 'oklch(91% 0.05 195)', 'oklch(42% 0.01 60)'],
+  },
+  'dichromatic-print': {
+    key: 'dichromatic-print',
+    label: 'Dichromatic print',
+    brief: 'EXACTLY two saturated inks at distant hues (e.g. ultramarine + cadmium-red, viridian + vermillion) on uncoated cream or off-white. No third color. The world is Risograph two-color runs, Constructivist posters, Polish film bills.',
+    examples: ['oklch(38% 0.20 250)', 'oklch(58% 0.22 30)', 'oklch(93% 0.02 80)'],
+  },
+  'oxidized-metal': {
+    key: 'oxidized-metal',
+    label: 'Oxidized metal',
+    brief: 'Patina palette built from oxidized-copper greens (~165), aged-brass yellows (~85), and rust browns (~40), all at moderate chroma 0.06-0.12. The world is industrial reclamation, brutalist plazas, Tadao Ando concrete, weathered marine signage.',
+    examples: ['oklch(58% 0.10 165)', 'oklch(72% 0.10 85)', 'oklch(32% 0.06 40)'],
+  },
+  'phosphor-terminal': {
+    key: 'phosphor-terminal',
+    label: 'Phosphor terminal',
+    brief: 'Deep CRT-black background with a single phosphor accent (amber ~70, P1 green ~140, P3 white-blue ~210) used like a glowing trace. Often paired with a muted secondary scanline tint. The world is DEC VT220, ASR-33, oscilloscopes, early Bloomberg.',
+    examples: ['oklch(12% 0.008 140)', 'oklch(82% 0.20 142)', 'oklch(28% 0.01 140)'],
+  },
+};
+
+const PALETTE_FAMILY_KEYS = Object.keys(PALETTE_FAMILIES);
+
+// Positional role order for bare-OKLCH-list custom palettes. When a user passes
+// `--palette "oklch(..),oklch(..),oklch(..)"` without role labels, the values
+// are assigned to these roles in order. Six entries — the typical max — extras
+// truncate, shorts fall back to the family-default for the unfilled roles.
+const POSITIONAL_ROLES = ['ink', 'paper', 'accent', 'accent-2', 'mute', 'line'];
+
+// Deterministic pick from a list given a numeric seed (for reproducibility across
+// rerun-from-cache). Date.now()/Math.random() are forbidden in the workflow body,
+// so the seed has to come from elsewhere — we use a hash of the brief + run_slug.
+function djb2(str) {
+  let h = 5381;
+  for (let i = 0; i < str.length; i++) h = ((h << 5) + h + str.charCodeAt(i)) >>> 0;
+  return h;
+}
+
+// Split a string on a delimiter at the TOP LEVEL only — does not split inside
+// matching parens. Needed so `oklch(56% 0.21 27)` survives comma-splitting in
+// inline palette strings like `"ink:oklch(...),paper:oklch(...)"`.
+function splitTopLevel(str, delim) {
+  const parts = [];
+  let depth = 0, buf = '';
+  for (const ch of str) {
+    if (ch === '(') { depth++; buf += ch; }
+    else if (ch === ')') { depth = Math.max(0, depth - 1); buf += ch; }
+    else if (ch === delim && depth === 0) { parts.push(buf); buf = ''; }
+    else { buf += ch; }
+  }
+  if (buf.length > 0) parts.push(buf);
+  return parts;
+}
+
+// Parse the --palette flag value into one of:
+//   { kind: null }                                — flag was not passed
+//   { kind: 'none' }                              — user passed `none`; bypass lock for this run
+//   { kind: 'family', family }                    — one of the eight named families
+//   { kind: 'custom', tokens }                    — inline role:value pairs OR positional OKLCH list
+//   { kind: 'prose', text }                       — natural-language description; resolved by a translator agent later
+//   { kind: 'invalid', input, hint }              — looked like SOMETHING but didn't parse cleanly enough
+// Path-based loading (file → tokens) is NOT handled here — that's /set-palette's
+// job (it has Read/Write tools and full file access semantics). The flag is for
+// inline values only.
+//
+// Detection precedence: family key > "none" > inline OKLCH (role:value OR positional)
+// > prose. Anything with at least a couple word characters and NO oklch(...) literal
+// falls through to prose; the translator agent gets to interpret it. This is
+// deliberately permissive — typo input ("indstrial-mno") routes to prose, where the
+// translator may either rescue it (if context makes it obvious) or warn.
+function parsePaletteArg(input) {
+  if (input === undefined || input === null) return { kind: null };
+  if (typeof input !== 'string') return { kind: null };
+  const v = input.trim();
+  if (v.length === 0) return { kind: null };
+
+  if (v.toLowerCase() === 'none') return { kind: 'none' };
+  if (PALETTE_FAMILY_KEYS.includes(v)) return { kind: 'family', family: v };
+
+  const hasOklch = /oklch\s*\(/i.test(v);
+  const hasColon = v.includes(':');
+
+  // Inline role:value pairs. Detect by colon AND oklch presence. Example:
+  //   "ink:oklch(18% 0.012 60),paper:oklch(94% 0.020 78),accent:oklch(56% 0.21 27)"
+  if (hasColon && hasOklch) {
+    const tokens = {};
+    const parts = splitTopLevel(v, ',');
+    for (const rawPart of parts) {
+      const colonIdx = rawPart.indexOf(':');
+      if (colonIdx < 0) continue;
+      const role = rawPart.slice(0, colonIdx).trim().replace(/^--/, '');
+      const value = rawPart.slice(colonIdx + 1).trim();
+      if (role.length > 0 && /oklch\s*\(/i.test(value)) {
+        tokens[role] = value;
+      }
+    }
+    if (Object.keys(tokens).length > 0) return { kind: 'custom', tokens };
+    return { kind: 'invalid', input: v, hint: 'looked like role:value pairs but no oklch(...) values parsed' };
+  }
+
+  // Bare positional list — N OKLCH values comma-separated, no roles. Assigns
+  // them to POSITIONAL_ROLES in order. Example:
+  //   "oklch(18% 0.012 60),oklch(94% 0.020 78),oklch(56% 0.21 27)"
+  if (hasOklch) {
+    const parts = splitTopLevel(v, ',').map((p) => p.trim()).filter((p) => p.length > 0);
+    const tokens = {};
+    for (let i = 0; i < parts.length && i < POSITIONAL_ROLES.length; i++) {
+      if (/oklch\s*\(/i.test(parts[i])) tokens[POSITIONAL_ROLES[i]] = parts[i];
+    }
+    if (Object.keys(tokens).length > 0) return { kind: 'custom', tokens };
+    return { kind: 'invalid', input: v, hint: 'looked like a positional OKLCH list but no oklch(...) values parsed' };
+  }
+
+  // Prose path. Anything with ≥6 characters AND ≥2 word characters AND no oklch(
+  // is treated as a natural-language description. The translator agent will turn
+  // it into OKLCH tokens later in the workflow body. Inputs shorter than that
+  // are most likely typos or garbage and fall through to 'invalid'.
+  const wordCharCount = (v.match(/[A-Za-z]/g) ?? []).length;
+  if (v.length >= 6 && wordCharCount >= 4) {
+    return { kind: 'prose', text: v };
+  }
+
+  return { kind: 'invalid', input: v, hint: 'not a family key, not "none", not OKLCH, and too short to be a prose description' };
+}
+
 // Path resolver. project_root is passed by the command markdown.
 // HARD CONTRACT: project_root must be a non-empty absolute path. No silent fallback —
 // a missing or empty project_root used to fall back to the presto repo, which caused
@@ -256,6 +420,8 @@ function resolvePaths(projectRoot) {
     starterPath: `${root}/seeds/starter.html`,
     tokensPath: `${root}/seeds/tokens.css`,
     designApproachPath: `${root}/memory/DESIGN_APPROACH.md`,
+    palettePath: `${root}/memory/PALETTE.json`,
+    recentPalettesPath: `${root}/memory/recent-palettes.json`,
   };
 }
 
@@ -380,6 +546,247 @@ const DRAFT_RULES = [
     ? `Keywords (PRIMARY design signal, weight equal to the brief itself): ${JSON.stringify(keywords)}\n`
     : '';
 
+  // ---------- Palette family resolution ----------
+  // Three states the workflow respects:
+  //   1. LOCKED   — memory/PALETTE.json present. Use lock.family verbatim. anti-list dormant.
+  //   2. OVERRIDE — args.palette is a family-key string OR "none". "none" clears the lock
+  //                 effect for this run only (does not delete the file); a family key
+  //                 forces that family.
+  //   3. EXPLORE  — no lock + no override. In autonomous mode, rotate deterministically
+  //                 using the recent-palettes anti-list. In multi-draft modes, leave
+  //                 paletteFamily=null so each drafter picks its own (variance preserved).
+  //
+  // The agent does the actual disk reads. We synthesise an INTENT block here that the
+  // first agent call (the Brief directive) will respect, and we pre-load the lock/recent
+  // via a small probe agent so the rest of the body can branch.
+  const paletteArg = typeof ARGS.palette === 'string' ? ARGS.palette.trim() : '';
+  const paletteParsed = parsePaletteArg(paletteArg);
+  if (paletteParsed.kind === 'invalid') {
+    log(`WARN: --palette "${paletteParsed.input}" did not parse — ${paletteParsed.hint}. Treating as unset; the run will fall back to lock-or-explore mode. Valid forms: a family key (${PALETTE_FAMILY_KEYS.join(' | ')}); the literal "none"; inline "role:oklch(...),role:oklch(...)"; a bare comma-separated OKLCH list (positional roles: ${POSITIONAL_ROLES.join(', ')}); or a natural-language description (e.g. "warm coral with complementing tones").`);
+  }
+
+  // Prose path. Translate the natural-language description into OKLCH tokens via a
+  // small focused agent BEFORE state resolution. The translator gets the brief +
+  // design read as context so it can interpret phrases like "complement the brand
+  // accent" correctly. Output drops into the same custom-tokens slot as inline.
+  let paletteProseText = null;
+  let paletteProseInterpretation = null;
+  let paletteOverrideCustomFromProse = null;
+  if (paletteParsed.kind === 'prose') {
+    paletteProseText = paletteParsed.text;
+    log(`palette: --palette is prose ("${paletteProseText.slice(0, 80)}${paletteProseText.length > 80 ? '…' : ''}"); invoking translator.`);
+    const translator = await agent(
+      `OWNER: impeccable (OKLCH palette discipline).\n` +
+      `\n` +
+      `The user passed a natural-language description as their --palette value. Translate it into 3-6 OKLCH tokens that a frontend drafter can put directly on :root.\n` +
+      `\n` +
+      `Prose description: ${JSON.stringify(paletteProseText)}\n` +
+      `Brief (for context, may be empty): ${JSON.stringify(brief)}\n` +
+      `Design Read (for context, may be empty): ${JSON.stringify(designRead)}\n` +
+      `\n` +
+      `RULES.\n` +
+      `1. OUTPUT FORMAT. Return JSON with two fields: { "tokens": { "<role>": "oklch(L% C H)", ... }, "interpretation": "<one short sentence explaining how you read the prose>" }.\n` +
+      `2. ROLE NAMES. Use these canonical roles when applicable: ink (the dominant text color), paper (the dominant background), accent (the primary saturated accent), accent-2 (optional second accent), mute (a muted secondary text/border color), line (rule/divider color). You MAY add other roles if the prose explicitly names them (e.g. "danger:..., success:...").\n` +
+      `3. OKLCH ONLY. Every value is an oklch(...) literal. L expressed as percentage (e.g. 56%). C as decimal 0–0.4. H in degrees 0–360. No hex, no rgb, no hsl.\n` +
+      `4. CHROMA DISCIPLINE. Match the description's tone — "warm coral" implies moderate chroma 0.10–0.18, not 0.28; "muted forest" implies low chroma 0.04–0.08; "electric lime" implies near-gamut chroma 0.25+.\n` +
+      `5. CONTRAST. ink-paper pair must clear WCAG AA against a normal-text body. If the prose names only an accent or only a background, derive the other anchors to clear AA.\n` +
+      `6. ANTI-DEFAULTS. Banned by both impeccable and design-taste-frontend regardless of how the prose phrases it: AI-purple (indigo-violet gradient family centered ~280 hue); generic beige + brass premium-consumer family; pure #000 on pure #FFF (always warm-bias one of them); Inter-flavored neutrals when the prose calls for character. If the prose seems to ask for one of these, redirect to the nearest legitimate equivalent and call it out in interpretation.\n` +
+      `7. INTERPRETATION. One sentence. Name what you anchored on. Examples: "Read this as warm-paper editorial with a coral spot color; anchored on a soft cream paper and warm-charcoal ink, with the coral at moderate chroma." OR "Read 'phosphor terminal' literally — black CRT background, single phosphor-amber accent."\n` +
+      `\n` +
+      `If the prose is too vague to translate (e.g. "make it nice"), STILL produce a token set — pick the most defensible interpretation given the brief and explain in interpretation that you guessed. Never refuse; the workflow needs tokens to proceed.\n` +
+      `\n` +
+      `Return ONLY the JSON object matching the schema.`,
+      {
+        schema: {
+          type: 'object',
+          required: ['tokens', 'interpretation'],
+          properties: {
+            tokens: {
+              type: 'object',
+              minProperties: 2,
+              maxProperties: 8,
+              additionalProperties: {
+                type: 'string',
+                pattern: '^oklch\\s*\\(',
+              },
+            },
+            interpretation: { type: 'string', minLength: 8 },
+          },
+        },
+        label: 'palette-translate',
+        phase: 'Brief',
+      }
+    );
+    if (translator && translator.tokens && Object.keys(translator.tokens).length >= 2) {
+      paletteOverrideCustomFromProse = translator.tokens;
+      paletteProseInterpretation = translator.interpretation;
+      log(`palette: prose translated → ${Object.keys(translator.tokens).length} tokens (${Object.keys(translator.tokens).join(', ')}). interpretation: ${translator.interpretation}`);
+    } else {
+      log(`WARN: palette translator returned no usable tokens; treating --palette prose as unset for this run.`);
+    }
+  }
+
+  const paletteOverrideClears = paletteParsed.kind === 'none';
+  const paletteOverrideKey = paletteParsed.kind === 'family' ? paletteParsed.family : null;
+  const paletteOverrideCustom = (paletteParsed.kind === 'custom' ? paletteParsed.tokens : null)
+    ?? paletteOverrideCustomFromProse;
+
+  // Probe disk for PALETTE.json + recent-palettes.json. One read-only agent, no schema —
+  // returns parsed JSON or nulls.
+  const paletteProbe = await agent(
+    `Read-only probe. Do these two file reads and return a JSON object with the results.\n` +
+    `\n` +
+    `STEP 1. Use the Bash tool to check whether each file exists:\n` +
+    `  test -f ${PATHS.palettePath} && echo lock-yes || echo lock-no\n` +
+    `  test -f ${PATHS.recentPalettesPath} && echo recent-yes || echo recent-no\n` +
+    `\n` +
+    `STEP 2. If lock-yes, Read ${PATHS.palettePath} and parse its JSON. Capture the "family" field (string) and "tokens" field (object).\n` +
+    `STEP 3. If recent-yes, Read ${PATHS.recentPalettesPath} and parse its JSON. Capture the "recent" array of { family } entries.\n` +
+    `\n` +
+    `Return EXACTLY this shape:\n` +
+    `{ "lock": { "family": "<key>", "tokens": {...} } | null, "recent": ["<family-key>", ...] | [] }\n` +
+    `\n` +
+    `If a file does not exist or fails to parse, return null/[] for that field. Do not throw.`,
+    {
+      schema: {
+        type: 'object',
+        required: ['lock', 'recent'],
+        properties: {
+          lock: {
+            type: ['object', 'null'],
+            properties: {
+              family: { type: 'string' },
+              tokens: { type: 'object' },
+            },
+          },
+          recent: { type: 'array', items: { type: 'string' } },
+        },
+      },
+      label: 'palette-probe',
+      phase: 'Brief',
+    }
+  );
+
+  const lockedFamily = (paletteProbe?.lock?.family && PALETTE_FAMILY_KEYS.includes(paletteProbe.lock.family))
+    ? paletteProbe.lock.family
+    : null;
+  const lockedTokens = (paletteProbe?.lock?.tokens && typeof paletteProbe.lock.tokens === 'object')
+    ? paletteProbe.lock.tokens
+    : null;
+  const recentList = Array.isArray(paletteProbe?.recent)
+    ? paletteProbe.recent.filter((k) => typeof k === 'string')
+    : [];
+
+  // Resolve effective palette state for THIS run.
+  let paletteState; // 'locked' | 'override' | 'explore'
+  let paletteFamily; // string key, 'custom', or null
+  let paletteCustomTokens = null; // populated when family === 'custom' (override OR locked)
+
+  if (paletteOverrideClears) {
+    paletteState = 'override';
+    paletteFamily = null;
+    log(`palette: --palette none → cleared for this run (lock file untouched).`);
+  } else if (paletteOverrideCustom) {
+    paletteState = 'override';
+    paletteFamily = 'custom';
+    paletteCustomTokens = paletteOverrideCustom;
+    const roleList = Object.keys(paletteOverrideCustom).join(', ');
+    log(`palette: --palette custom (${Object.keys(paletteOverrideCustom).length} tokens: ${roleList}) → forced for this run (lock file untouched).`);
+  } else if (paletteOverrideKey) {
+    paletteState = 'override';
+    paletteFamily = paletteOverrideKey;
+    log(`palette: --palette ${paletteOverrideKey} → forced family for this run.`);
+  } else if (lockedFamily) {
+    paletteState = 'locked';
+    paletteFamily = lockedFamily;
+    // When the lock's family is 'custom' (or anything outside the eight known keys),
+    // the lock's tokens are the only source of truth — there is no canonical brief.
+    if (!PALETTE_FAMILIES[lockedFamily] && lockedTokens) {
+      paletteCustomTokens = lockedTokens;
+    }
+    log(`palette: locked to ${lockedFamily} (from memory/PALETTE.json).`);
+  } else {
+    paletteState = 'explore';
+    if (autonomous) {
+      // Deterministic rotation: pick the first family NOT in recent. Seeded by hash of
+      // brief + run_slug so reruns are stable. If every family is in recent (recent is
+      // longer than the family set), reset and pick the oldest-rotation slot.
+      const seed = djb2(String(brief) + '|' + (ARGS.run_slug ?? ''));
+      const recentSet = new Set(recentList);
+      const fresh = PALETTE_FAMILY_KEYS.filter((k) => !recentSet.has(k));
+      const pool = fresh.length > 0 ? fresh : PALETTE_FAMILY_KEYS;
+      paletteFamily = pool[seed % pool.length];
+      log(`palette: explore mode autonomous → rotated to ${paletteFamily} (anti-list: [${recentList.join(', ')}]).`);
+    } else {
+      paletteFamily = null;
+      log(`palette: explore mode multi-draft → no forced family; each drafter picks (anti-list: [${recentList.join(', ')}]).`);
+    }
+  }
+
+  // Compose the palette block injected into every drafter and the brief director.
+  // Different shape depending on state — locked is the strictest, explore is the loosest.
+  const paletteBlock = (() => {
+    // Helper: render a tokens-object as :root custom-property lines.
+    const renderTokenLines = (tokens) => Object.entries(tokens)
+      .map(([k, v]) => `    --${k}: ${v};`)
+      .join('\n');
+    // Helper: a generic "use these tokens" instruction for custom palettes (no canonical brief).
+    const customSourceLine = (source) =>
+      `  This is a CUSTOM palette (no canonical family brief). The OKLCH values below ARE the design language; build the page entirely within them. Compose the rest of the world (type, motion, density, composition) to feel correct for THIS palette specifically — read what the colors imply (saturation, hue distance, contrast) and let the design follow. Source: ${source}.`;
+
+    // Custom palette, regardless of state (override or locked) — same shape, slightly different framing.
+    if (paletteFamily === 'custom' && paletteCustomTokens) {
+      const label = paletteState === 'locked' ? 'LOCKED (custom)' : 'OVERRIDE (custom)';
+      let source;
+      if (paletteState === 'locked') source = 'memory/PALETTE.json (locked)';
+      else if (paletteProseText) source = `--palette prose: ${JSON.stringify(paletteProseText)} (translated)`;
+      else source = '--palette inline override';
+      const proseLine = paletteProseText && paletteProseInterpretation
+        ? `  Translator interpretation: ${paletteProseInterpretation}\n`
+        : '';
+      return (
+        `PALETTE — ${label}:\n` +
+        customSourceLine(source) + `\n` +
+        proseLine +
+        `  REQUIRED :root tokens (use exactly these — do not substitute, do not reinterpret):\n` +
+        renderTokenLines(paletteCustomTokens) + `\n` +
+        (paletteState === 'locked'
+          ? `  Drift is an AUDIT failure: do not redefine any of the above roles with a different OKLCH value.\n`
+          : `  Override is per-run; the project's lock file (if any) is untouched.\n`)
+      );
+    }
+
+    if (paletteState === 'locked' && lockedTokens) {
+      return (
+        `PALETTE — LOCKED (from memory/PALETTE.json, family="${paletteFamily}"):\n` +
+        `  This project has committed to a palette. You MUST use these exact OKLCH tokens on :root and build the page entirely within this palette family. Do not invent additional accents. Do not substitute hex/rgb. Do not reinterpret.\n` +
+        `  Locked :root tokens:\n` +
+        renderTokenLines(lockedTokens) + `\n` +
+        `  Family brief (for vibe alignment, not for token substitution): ${PALETTE_FAMILIES[paletteFamily]?.brief ?? ''}\n`
+      );
+    }
+    if (paletteFamily && PALETTE_FAMILIES[paletteFamily]) {
+      const fam = PALETTE_FAMILIES[paletteFamily];
+      return (
+        `PALETTE FAMILY — ${paletteFamily} (${fam.label}):\n` +
+        `  Commit to this OKLCH world. ${fam.brief}\n` +
+        `  Example OKLCH values (illustrative — do not copy verbatim, pick your own that LIVE in this family): ${fam.examples.join(', ')}\n` +
+        (recentList.length > 0 ? `  ANTI-LIST (recently used in this project; DO NOT drift into them): [${recentList.join(', ')}]\n` : '')
+      );
+    }
+    // explore + multi-draft: tell each drafter to pick a DIFFERENT family from the others
+    const antiLine = recentList.length > 0
+      ? `  ANTI-LIST (recently used in this project; avoid drifting into them): [${recentList.join(', ')}]\n`
+      : '';
+    const familyMenu = PALETTE_FAMILY_KEYS.map((k) => `    - ${k}: ${PALETTE_FAMILIES[k].label}`).join('\n');
+    return (
+      `PALETTE FAMILY — pick one (you are drafter N of ${nDrafts}; each drafter MUST pick a DIFFERENT family from these):\n` +
+      familyMenu + `\n` +
+      antiLine +
+      `  Commit to one family and stay inside it. Drafters that drift toward the warm-paper-with-red-accent default will be rejected.\n`
+    );
+  })();
+
   // ---------- 1. BRIEF (art-direct the drafters) ----------
   phase('Brief');
 
@@ -404,10 +811,13 @@ const DRAFT_RULES = [
     `Caller constraints: ${JSON.stringify(constraints)}\n` +
     keywordsBlock +
     `\n` +
+    paletteBlock +
+    `\n` +
     `Produce TWO things:\n` +
     briefDirectiveSpec +
     `  Also include mode: ${JSON.stringify(mode)}.\n` +
     (hasKeywords ? `  Every directive MUST treat the keywords as primary seed terms — they are NOT optional flavor; they carry weight equal to the brief.\n` : '') +
+    (paletteFamily ? `  Every directive MUST honour the palette family above; do not silently drift into the warm-paper-with-red default.\n` : '  Every directive MUST name a specific palette family from the menu above; do not silently drift into the warm-paper-with-red default.\n') +
     `\n` +
     `Return ONLY the JSON object matching the schema.`;
 
@@ -562,6 +972,8 @@ const DRAFT_RULES = [
         `Shared constraints (from art direction): ${JSON.stringify(sharedConstraints)}\n` +
         keywordsDrafterBlock +
         `\n` +
+        paletteBlock +
+        `\n` +
         moodBoardForDrafterBlock +
         `\n` +
         `Your assigned angle: "${angle}"\n` +
@@ -677,6 +1089,15 @@ const DRAFT_RULES = [
       `## Mode — autonomous\n` +
       `Generated in autonomous mode, no user iteration. Angle: ${JSON.stringify(draft.angle ?? '')}.\n` +
       `\n` +
+      `## Palette family — ${JSON.stringify(paletteFamily ?? 'unspecified')}\n` +
+      `State: ${paletteState}. ${paletteState === 'locked' ? 'Locked from memory/PALETTE.json — drafter was required to honour the locked tokens.' : paletteState === 'override' ? `Forced via --palette ${JSON.stringify(paletteArg)} for this run.` : 'Explore mode — family chosen by deterministic rotation against the recent-palettes anti-list. Caller can lock via /set-palette to stop drift.'}\n` +
+      (paletteFamily === 'custom' && paletteCustomTokens
+        ? `\n### Custom palette tokens (verbatim)\n` +
+          Object.entries(paletteCustomTokens).map(([k, v]) => `- --${k}: ${v}`).join('\n') + `\n` +
+          `Source: ${paletteState === 'locked' ? 'memory/PALETTE.json' : (paletteProseText ? `--palette prose (translated): ${JSON.stringify(paletteProseText)}` : '--palette inline override')}.\n` +
+          (paletteProseInterpretation ? `Translator interpretation: ${paletteProseInterpretation}\n` : '')
+        : '') +
+      `\n` +
       `## Scene sentence — ${JSON.stringify(draft.scene_sentence ?? '')}\n` +
       `\n` +
       `## Visual direction summary\n` +
@@ -711,8 +1132,18 @@ const DRAFT_RULES = [
       `- presto/seeds/starter.html\n` +
       `- presto/seeds/tokens.css\n` +
       `- presto/memory/DESIGN_APPROACH.md\n` +
+      `- presto/memory/recent-palettes.json (anti-list ledger; updated by STEP 5 below)\n` +
       `\n` +
-      `STEP 5. Return the JSON object matching the schema: wrote_paths is the array of the three absolute paths you wrote (starter.html, tokens.css, DESIGN_APPROACH.md), notes is a short string summarising what you extracted (e.g. how many tokens, any caveats).\n` +
+      `STEP 5 — RECENT-PALETTES LEDGER (only when the run is in explore mode; skip otherwise).\n` +
+      `Current palette state for THIS run: ${JSON.stringify(paletteState)}. Family used: ${JSON.stringify(paletteFamily)}.\n` +
+      `If paletteState === "explore" AND paletteFamily is a non-empty string, update the anti-list so future explore runs rotate AWAY from this choice. Do these sub-steps:\n` +
+      `  5a. Read ${PATHS.recentPalettesPath} if it exists; parse JSON; capture { recent: [...] }. If absent or malformed, treat as { recent: [] }.\n` +
+      `  5b. Construct a new entry: { "family": ${JSON.stringify(paletteFamily)}, "run_slug": ${JSON.stringify(ARGS.run_slug ?? 'unnamed-run')}, "via": "houdini-autonomous" }.\n` +
+      `  5c. Prepend the new entry to recent[]. Keep the first 5; drop the rest. Do NOT dedupe — the family may repeat over the project's lifetime; the rotation algorithm reads the most recent N regardless.\n` +
+      `  5d. Write the updated JSON to ${PATHS.recentPalettesPath} using the Write tool. Pretty-print with 2-space indent.\n` +
+      `If paletteState !== "explore" OR paletteFamily is empty, skip 5a-5d entirely and add a one-line note to your notes field: "skipped recent-palettes update (state=<state>, family=<family>)".\n` +
+      `\n` +
+      `STEP 6. Return the JSON object matching the schema: wrote_paths is the array of absolute paths you wrote this run (starter.html, tokens.css, DESIGN_APPROACH.md, and recent-palettes.json IF you wrote it), notes is a short string summarising what you extracted (e.g. how many tokens, palette state, any caveats).\n` +
       `\n` +
       `Return ONLY the JSON object.`;
 

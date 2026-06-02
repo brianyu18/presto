@@ -1,7 +1,7 @@
 ---
 name: magic
-description: Run the full 8-phase presto design flow (HOUDINI -> READ -> CONTEXT -> DIALS -> STACK -> BUILD -> POLISH -> AUDIT). Three modes: default conversational (one cold-start prompt), --surprise (zero prompts, autonomous wildcard seed), --guided (pause for approval at every phase boundary). Orthogonal modifiers: --nogen (skip MoodBoard), --gen[-N] (override mood image count 1-5, default 3), --useimg[-N] (let drafter embed N mood images, default 2 in autonomous). All three pass through to any /houdini invocation this command triggers.
-argument-hint: "[intent] [--surprise | --guided] [--nogen | --gen[-N]] [--useimg[-N]]"
+description: Run the full 8-phase presto design flow (HOUDINI -> READ -> CONTEXT -> DIALS -> STACK -> BUILD -> POLISH -> AUDIT). Three modes: default conversational (one cold-start prompt), --surprise (zero prompts, autonomous wildcard seed), --guided (pause for approval at every phase boundary). Orthogonal modifiers: --nogen (skip MoodBoard), --gen[-N] (override mood image count 1-5, default 3), --useimg[-N] (let drafter embed N mood images, default 2 in autonomous), --palette <family|none> (force a palette family, or 'none' to ignore an existing lock for this run). All four pass through to any /houdini invocation this command triggers.
+argument-hint: "[intent] [--surprise | --guided] [--nogen | --gen[-N]] [--useimg[-N]] [--palette <family|none>]"
 ---
 
 # /magic
@@ -62,7 +62,16 @@ If either is omitted or empty, the workflow throws `resolvePaths: args.project_r
 
 ## Behavior
 
-1. Parse `$ARGUMENTS` for flags. Recognize `--surprise`, `--guided`, `--nohoudini`, `--use <slug>`, `--nogen`, `--gen[-N|=N| N]`, and `--useimg[-N|=N| N]`. Any flag may appear anywhere. Strip each (token + value + surrounding whitespace) and trim. The remaining text is the intent. The image flags (`--nogen` / `--gen` / `--useimg`) are orthogonal to mode flags and compose with either; when present they propagate verbatim to every `/houdini` invocation this command triggers. Capture extracted values into local variables: `skipImageGen` (bool), `moodCount` (int|null), `embedImages` (int|null), `useSlug` (string|null), `noHoudini` (bool).
+1. Parse `$ARGUMENTS` for flags. Recognize `--surprise`, `--guided`, `--nohoudini`, `--use <slug>`, `--nogen`, `--gen[-N|=N| N]`, `--useimg[-N|=N| N]`, and `--palette <value>` (also accepts `--palette=<value>` and `--palette-<value>`). Any flag may appear anywhere. Strip each (token + value + surrounding whitespace) and trim. The remaining text is the intent. The image and palette flags are orthogonal to mode flags and compose with either; when present they propagate verbatim to every `/houdini` invocation this command triggers AND to the magic workflow itself. Capture extracted values into local variables: `skipImageGen` (bool), `moodCount` (int|null), `embedImages` (int|null), `useSlug` (string|null), `noHoudini` (bool), `paletteOverride` (string|null).
+
+   **`--palette <value>` accepts five shapes**, forwarded verbatim to the workflow which does the parsing:
+   - A family key: `industrial-mono`, `warm-editorial`, `electric-acid`, `deep-jewel`, `washed-pastel`, `dichromatic-print`, `oxidized-metal`, `phosphor-terminal`.
+   - The literal `none` — bypass any existing `memory/PALETTE.json` lock for THIS run only (file untouched).
+   - An inline custom palette as role:value pairs: `"ink:oklch(20% 0.04 280),paper:oklch(96% 0.01 80),accent:oklch(64% 0.22 145)"`. Quote the whole value so the shell doesn't split on commas.
+   - A bare positional OKLCH list: `"oklch(18% 0.012 60),oklch(94% 0.020 78),oklch(56% 0.21 27)"`. Assigned to roles `ink, paper, accent, accent-2, mute, line` in order (max 6).
+   - A natural-language description: `"warm coral with complementing tones that evoke warmth"` or `"muted forest green with cream and one rust accent"` or `"Le Labo apothecary"`. The workflow detects prose, runs a translator agent over it (with the brief + design read as context), and turns it into 3-6 OKLCH tokens. The original prose and the translator's interpretation are both recorded in `DESIGN_APPROACH.md`. This is the recommended shape for non-power-users — you describe the palette in plain English and the workflow does the OKLCH math.
+
+   When the value contains quoted strings with commas and parens, preserve the quoted region verbatim during the strip — capture the entire payload between the quotes, not just the first comma-delimited segment. If parsing fails the workflow logs a WARN and treats the flag as unset (no halt).
 
 2. If BOTH `--surprise` and `--guided` were set, log a one-line override note ("both --surprise and --guided passed; --surprise wins, ignoring --guided") and treat the invocation as `--surprise`. `--surprise` wins because it is the more decisive bypass. `--nogen` is orthogonal — it does not participate in this precedence and is honored regardless of which mode wins.
 
@@ -97,6 +106,7 @@ If either is omitted or empty, the workflow throws `resolvePaths: args.project_r
       - If `--nogen` was passed, add `"skip_image_gen": true` to the args object so houdini skips the MoodBoard phase entirely.
       - If `--gen[-N]` was passed and its N is a positive integer, add `"mood_board_count": <N>` (workflow clamps to 1-5).
       - If `--useimg[-N]` was passed, add `"embed_images": <N>` (use 2 when bare; 0 explicitly disables; workflow clamps + auto-bumps as documented).
+      - If `--palette <family|none>` was captured, add `"palette": "<family-or-none>"` to the args. The houdini workflow resolves the lock-vs-override semantics; this command just forwards the string verbatim.
 
    c. When that workflow returns, it has already written `presto/memory/DESIGN_APPROACH.md`, `presto/seeds/starter.html`, and `presto/seeds/tokens.css`. Announce to the user in one line that the seed has landed, including the path to `starter.html`.
 

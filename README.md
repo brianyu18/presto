@@ -210,6 +210,8 @@ The break-out commands are first-class. `/magic` is one composition; the others 
 | `/houdini [args]` | the brief you pass | `memory/DESIGN_APPROACH.md`, `seeds/starter.html`, `seeds/tokens.css` | Cold-start a design |
 | `/design-read` | the intent you pass | `memory/DESIGN_READ.md` | Written one-line Design Read + kind/audience/vibe |
 | `/set-dials` | optional brief + overrides | `memory/DIALS.json` | Explicit VARIANCE/MOTION/DENSITY for any build |
+| `/set-palette <family\|none\|from-seed>` | family-key, `none`, or `from-seed` | `memory/PALETTE.json` | Commit / replace / clear the palette lock |
+| `/palette-status` | nothing (read-only) | stdout report | Inspect current palette state before a run |
 | `/design-flow [feature]` | `memory/DESIGN_READ.md` + `memory/DIALS.json` (asks if absent) | code in your project | Build one feature without re-running the full flow |
 | `/design-audit [target]` | the target file or directory | `memory/last-audit.json` (Pre-Flight + slop test + emil review) | Check existing code against the three skills' rules |
 | `/design-review` | uncommitted + staged git diff | inline markdown table | Emil's eyes on a change before commit |
@@ -218,9 +220,104 @@ The break-out commands are first-class. `/magic` is one composition; the others 
 
 Each command is invokable directly. None requires `/magic`. None blocks waiting on another. The state in `memory/` is shared, so `DESIGN_READ.md` written by `/design-read` is consumed by `/design-flow` exactly as it is by `/magic`.
 
-**The shape of presto is six primitives plus one composition.** `/magic` chains the primitives in a known-good order with a cold-start guard and a final audit gate. The primitives themselves do not know `/magic` exists. presto degrades cleanly: even if `/magic` breaks, every break-out keeps working.
+**The shape of presto is eight primitives plus one composition.** `/magic` chains the primitives in a known-good order with a cold-start guard and a final audit gate. The primitives themselves do not know `/magic` exists. presto degrades cleanly: even if `/magic` breaks, every break-out keeps working.
 
 Plus `/impeccable [cmd]` as a passthrough to any of impeccable's 25 sub-commands (`craft`, `shape`, `polish`, `audit`, `harden`, etc.).
+
+---
+
+## The palette state machine
+
+The single biggest source of design sameness across runs is palette drift toward whatever the model's training data says "premium" looks like. presto encodes a three-state machine — **EXPLORING**, **LOCKED**, **OVERRIDDEN** — so that early runs surface variance, mature projects enforce consistency, and one-off experiments don't damage either.
+
+### The three states
+
+| State | Trigger | What `/houdini` does | What `/magic` does |
+|---|---|---|---|
+| **EXPLORING** | no `memory/PALETTE.json` | Rotates through the 8 palette families. In `--auto`, deterministic rotation against the anti-list (last 5 chosen families in `memory/recent-palettes.json`). In multi-draft modes, each drafter picks a different family. | CONTEXT derives palette_strategy per-run. AUDIT does not run drift check. |
+| **LOCKED** | `memory/PALETTE.json` exists | Drafters receive the locked OKLCH tokens verbatim and stay inside the family. Anti-list dormant. | CONTEXT treats the locked tokens as ground truth. AUDIT preflight enforces no drift: a `block`-severity finding if any built file redefines a locked role with a different OKLCH value. |
+| **OVERRIDDEN** (per-run) | `--palette <family>` or `--palette none` on `/magic` or `/houdini` | Forces the named family (or clears the lock effect) for THIS run only. `memory/PALETTE.json` is NOT modified. | Same — override applies during this run; lock survives. |
+
+### The eight palette families
+
+Defined in `workflows/houdini.js → PALETTE_FAMILIES`:
+
+| Key | Label | World |
+|---|---|---|
+| `industrial-mono` | Industrial monochrome | Grayscale ladder + one cold accent. NASA reports, hardware schematics. |
+| `warm-editorial` | Warm editorial | Ink on warm paper, one spot color. Print magazines, 1930s playbills. |
+| `electric-acid` | Electric / acid | Black ground + one over-saturated accent at gamut edge. Rave flyers. |
+| `deep-jewel` | Deep jewel | 2-3 mid-deep jewel tones (emerald / sapphire / amethyst / garnet) at chroma 0.1-0.18. Aesop, A24. |
+| `washed-pastel` | Washed pastel | High-lightness low-chroma pastels sharing space. Risograph zines. |
+| `dichromatic-print` | Dichromatic print | Exactly two saturated inks at distant hues on cream. Constructivist posters. |
+| `oxidized-metal` | Oxidized metal | Patina greens, aged brass, rust browns. Brutalist plazas. |
+| `phosphor-terminal` | Phosphor terminal | CRT-black ground + single phosphor accent (amber / green / blue-white). DEC VT220. |
+
+### What `--palette <value>` accepts
+
+The flag lives on both `/magic` and `/houdini`. Five shapes — the first two are presets, the next two are power-user OKLCH, the last is plain English (the default for most people):
+
+1. **A family key** — e.g. `--palette deep-jewel`. Forces that family for the run. If a lock is present, the override wins for this run; the lock file is untouched. If no lock is present, the override pins the run to that family AND appends to the recent-palettes ledger so future explore runs rotate around it.
+2. **`none`** — `--palette none`. Explicitly clears any existing lock effect for this run only. The lock file is NOT deleted. Useful when you want to try one off-direction without losing the commitment.
+3. **Inline custom palette, role-labeled** — `--palette "ink:oklch(20% 0.04 280),paper:oklch(96% 0.01 80),accent:oklch(64% 0.22 145)"`. Roles are arbitrary; values must be OKLCH literals. Quote the whole value so the shell doesn't split on commas.
+4. **Inline custom palette, positional** — `--palette "oklch(18% 0.012 60),oklch(94% 0.020 78),oklch(56% 0.21 27)"`. Assigned to roles `ink, paper, accent, accent-2, mute, line` in order (max 6).
+5. **Plain English** — `--palette "warm coral with complementing tones that evoke warmth"` or `--palette "Le Labo apothecary — cream paper, espresso ink, one olive accent"`. The workflow detects prose and runs a translator agent that maps the description into 3-6 OKLCH tokens using the brief + design read as context. The translator enforces the impeccable bans regardless of how the prose phrases them: AI-purple, beige+brass, pure black-on-white, and Inter-flavored neutrals are redirected to the nearest legitimate equivalent. The original prose AND the translator's one-line interpretation are both preserved in `DESIGN_APPROACH.md` so you can verify how your prose was read.
+
+Examples — prose covers the common case:
+
+```sh
+/magic --surprise --palette "warm coral with complementing tones that evoke warmth" \
+  build a landing page for a yoga studio
+
+/houdini --auto --palette "muted forest green with cream and one rust accent"
+
+/magic --palette "the colors of a Hayao Miyazaki sunset over Tokyo" \
+  rebuild the hero
+```
+
+When any custom-shaped palette is supplied (shapes 3, 4, 5), the workflow records `family: "custom"` in the recent-palettes ledger and in any downstream `DESIGN_APPROACH.md`. There is no canonical "world brief" for a custom palette — the drafter reads the OKLCH values themselves (saturation, hue distance, contrast) and composes type, motion, and density to feel correct for those colors specifically.
+
+To **lock** a custom palette permanently rather than passing it per-run, use one of:
+
+- `/set-palette prose "warm coral with complementing tones"` — plain English.
+- `/set-palette custom "ink:oklch(...),paper:oklch(...),accent:oklch(...)"` — inline OKLCH.
+- `/set-palette --from ./brand/tokens.css` — load from a CSS or JSON file.
+- `/set-palette from-seed` — pull from the latest `/houdini` run's `seeds/tokens.css`.
+
+Anything that isn't one of the five shapes is rejected; the workflow logs a WARN and treats the flag as unset (no halt). Prose detection requires at least 6 characters and 4 word characters, so single typos like `--palette rgb` log a WARN rather than burning a translator call.
+
+### Memory files
+
+```
+memory/
+├── PALETTE.json            ← the lock. { family, tokens, locked_at, source, notes }. Absent = EXPLORING.
+└── recent-palettes.json    ← the anti-list. { recent: [{ family, run_slug, via }, …] }. Up to 5 entries.
+```
+
+`PALETTE.json` is written by `/set-palette` or by manually editing the file. Once present, every `/magic` run reads it during CONTEXT.
+
+`recent-palettes.json` is updated automatically on every autonomous `/houdini` HAND-OFF in explore mode. The skill SHOULD also append on guided/keywords HAND-OFF. The rotation algorithm prefers families not in the most recent entries; when all eight families have been used, the rotation resets.
+
+### The typical lifecycle
+
+```
+1. /magic --surprise build a portfolio for a sound designer
+     → EXPLORING. Houdini autonomous rotates to (e.g.) electric-acid. Run completes.
+2. /palette-status
+     → EXPLORING. Anti-list: [electric-acid].
+3. /magic --surprise build a portfolio for a sound designer
+     → EXPLORING. Rotation avoids electric-acid. Lands on (e.g.) deep-jewel.
+4. /palette-status
+     → EXPLORING. Anti-list: [deep-jewel, electric-acid].
+5. (User likes deep-jewel.)
+   /set-palette from-seed
+     → LOCKED to deep-jewel with the tokens lifted from the latest seed.
+6. /magic add a contact form
+     → LOCKED. CONTEXT honors the lock; BUILD uses exact tokens; AUDIT checks drift.
+7. (Want to try one off-direction without losing the lock.)
+   /magic --palette electric-acid try the page in acid
+     → OVERRIDDEN for this run. Lock file unchanged. AUDIT runs against the override.
+```
 
 ---
 

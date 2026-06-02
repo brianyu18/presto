@@ -261,6 +261,52 @@ Use this as a template for tone and pace:
 
 Keep the loop short, descriptive, and concrete. Always name what changed in the diff summary.
 
+## Palette family axis
+
+Every draft now commits to one of eight named OKLCH palette **families**, perpendicular to the `angle` axis. `angle` controls vibe and conviction; `palette_family` controls the color world. The two compose freely: `angle=wildcard` + `palette_family=phosphor-terminal` is a deliberately overcommitted phosphor-green world; `angle=safe` + `palette_family=warm-editorial` is a tasteful cream-and-ink page.
+
+The eight families, with brief descriptors (full briefs live in `workflows/houdini.js → PALETTE_FAMILIES`):
+
+| Key | Label | World |
+|---|---|---|
+| `industrial-mono` | Industrial monochrome | Hardware schematics, NASA reports — grayscale ladder + one cold accent. |
+| `warm-editorial` | Warm editorial | Print magazines, playbills — ink on warm paper with one spot color. |
+| `electric-acid` | Electric / acid | Rave flyers, FACT magazine — black ground + one over-saturated accent. |
+| `deep-jewel` | Deep jewel | Aesop, A24 — 2-3 mid-deep jewel tones at chroma 0.1-0.18. |
+| `washed-pastel` | Washed pastel | Risograph zines, Japanese stationery — high-L low-C pastels sharing space. |
+| `dichromatic-print` | Dichromatic print | Constructivist posters — exactly two saturated inks on cream. |
+| `oxidized-metal` | Oxidized metal | Brutalist plazas — patina greens, aged brass, rust browns. |
+| `phosphor-terminal` | Phosphor terminal | DEC VT220, oscilloscopes — CRT-black + single phosphor accent. |
+
+### How the workflow resolves which family a run uses
+
+Three states, in priority order (the workflow does this automatically; the skill does NOT have to compute it):
+
+1. **OVERRIDE** — caller passed `--palette <value>`. Five shapes accepted:
+   - `<family-key>` → use that family. If a lock exists, this OVERRIDES the lock for this run only; the file is not modified.
+   - `none` → clear lock effect for this run only; explore-mode rotation re-engages.
+   - Inline custom (`"ink:oklch(...),paper:oklch(...),..."` or `"oklch(...),oklch(...),..."` positional) → bypass any lock and force the inline tokens. The family is recorded as `"custom"`. There is no canonical brief — the drafter reads the OKLCH values themselves and composes type, motion, and density to feel correct for those colors specifically.
+   - Prose (`"warm coral with complementing tones"`, `"muted forest with cream"`, `"Le Labo apothecary"`) → the workflow detects natural language and runs a translator agent that maps the prose into 3-6 OKLCH tokens, then proceeds as if the user had supplied them inline. The translator gets the brief + design read as context and enforces the impeccable bans regardless of how the prose phrases them. Both the original prose and the translator's one-line interpretation are preserved in `DESIGN_APPROACH.md`.
+   - Anything else → parser logs a WARN and treats the flag as unset; run falls back to lock-or-explore.
+2. **LOCKED** — `memory/PALETTE.json` exists. Drafter receives the locked tokens verbatim and must stay inside them. Anti-list dormant. This is the "project has committed" state. The lock's `family` field may be one of the eight known keys (full family brief is appended to the drafter's prompt) or `"custom"` (tokens are the only source of truth; drafter works from them alone).
+3. **EXPLORE** — no override, no lock. Behavior depends on draft count:
+   - Autonomous (1 draft) → workflow rotates deterministically against `memory/recent-palettes.json` (the anti-list of the last 5 chosen families). The rotation is seeded by hash of `brief + run_slug` so reruns are stable. Only the eight named families participate in rotation; `"custom"` entries are noted in the ledger but never auto-chosen.
+   - Multi-draft (3 drafts) → each drafter picks a different family from the menu. The anti-list is passed as a "avoid drifting toward these" warning, not a hard exclusion.
+
+### What the skill must do
+
+- **Pass `palette` through verbatim** when the caller supplied `--palette`. The workflow does the lock-vs-override interpretation.
+- **Do NOT pre-compute the palette family in the skill.** The workflow holds the authoritative resolution logic (lock probe + override merge + anti-list rotation). Pre-computing in the skill would create two sources of truth.
+- **In HAND-OFF, surface the resolved family + state in `DESIGN_APPROACH.md`** via the `## Palette family — <key>` section. The autonomous-mode hand-off (in `workflows/houdini.js`) already writes this. If you are running the skill-driven HAND-OFF for guided/keywords mode, mirror the same field by reading what the drafter committed to and noting the state explicitly.
+
+### Recent-palettes ledger
+
+`memory/recent-palettes.json` is the anti-list. It's auto-updated by the autonomous hand-off only (rotation produces drift WITHOUT needing user input). For guided/keywords runs, the skill SHOULD append to this file on HAND-OFF — read the existing array, prepend `{ family: <chosen-key>, run_slug: $RUN_SLUG, via: "houdini-<mode>" }`, keep the first 5 entries, write back. This keeps the ledger meaningful across all modes.
+
+### Locking, once you're sure
+
+When the user picks a draft they want to live with for the project's lifetime, suggest `/set-palette from-seed` after HAND-OFF. This pulls the family + tokens out of the just-written `seeds/tokens.css` and writes `memory/PALETTE.json`. After that, every `/magic` run honors the lock and AUDIT enforces no drift.
+
 ## Rules every draft must honor
 
 Each drafter agent already has these baked in, but verify on hand-off:

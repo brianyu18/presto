@@ -280,6 +280,12 @@ const AUDIT_SCHEMA = {
     context = await agent(
       `OWNER: impeccable. Consult SKILL.md sections on PRODUCT.md/DESIGN.md context, brand-vs-product register, and the OKLCH palette strategy.\n` +
       `Prior Design Read: ${JSON.stringify(read ?? null)}.\n` +
+      `\n` +
+      `PALETTE-LOCK CHECK (load-bearing). Before composing palette_strategy:\n` +
+      `  1. Use the Bash tool to check whether ${PATHS.memoryDir}/PALETTE.json exists: \`test -f ${PATHS.memoryDir}/PALETTE.json && echo yes || echo no\`.\n` +
+      `  2. If "yes": Read the file. Parse its JSON. It will contain { "family": "<key>", "tokens": { "<role>": "<oklch(...) value>", ... }, "locked_at": "...", "source": "..." }. Treat the locked tokens as GROUND TRUTH for this project's palette. Your palette_strategy MUST anchor on those exact OKLCH values — anchors, ramps, and contrast targets are derived from them, NOT invented. existing_tokens MUST include the locked token names. State in scene_sentence that the palette is locked to family "<key>".\n` +
+      `  3. If "no": proceed normally — derive palette_strategy from the Design Read and any DESIGN_APPROACH.md present (which may suggest a family but is not binding).\n` +
+      `\n` +
       `Decide register (brand|product), define palette_strategy, list any existing_tokens you discovered, and write a one-sentence scene_sentence.\n` +
       `Write the JSON result to ${PATHS.memoryDir}/CONTEXT.json using your Write tool.`,
       { schema: CONTEXT_SCHEMA, label: 'context', phase: 'Context' }
@@ -367,7 +373,19 @@ const AUDIT_SCHEMA = {
       () => agent(
         `OWNER: design-taste-frontend. Run the mechanical Pre-Flight Check matrix from SKILL.md Section 14 (~55 checkboxes) against the build.\n` +
         `Bundle: ${auditBundle}.\n` +
-        `Return preflight_pass + any failing items as review_findings (severity: 'block' if it violates the matrix).\n` +
+        `\n` +
+        `PALETTE-DRIFT CHECK (load-bearing addition to the matrix):\n` +
+        `  1. Use Bash to check whether ${PATHS.memoryDir}/PALETTE.json exists: \`test -f ${PATHS.memoryDir}/PALETTE.json && echo yes || echo no\`.\n` +
+        `  2. If "no": skip this check — the project is in explore mode, no lock to drift from.\n` +
+        `  3. If "yes": Read the lock file. Extract its "tokens" object (the locked OKLCH role→value map) and "family" key.\n` +
+        `  4. For each production file listed in build.files_written that is HTML or CSS: Read it. Inspect every OKLCH color literal you find. For each locked token role, verify the file uses the locked value (allow ±0.5% on L/C, ±2° on H to tolerate rounding). The file MAY introduce additional accents NOT in the lock, but it MUST NOT redefine a locked role with a different value.\n` +
+        `  5. Drift findings:\n` +
+        `     - A locked role redefined with a non-matching OKLCH value → severity 'block', note "palette-drift: --<role> was locked to <value> but file <path> sets it to <other-value>".\n` +
+        `     - Hex or rgb colors used where the locked palette would suffice → severity 'warn', note "palette-drift: hex/rgb literal in <path> bypasses locked tokens".\n` +
+        `     - No drift detected → no finding (the check is silent on success).\n` +
+        `  6. If drift findings include any 'block' severity, set preflight_pass = false regardless of the rest of the matrix.\n` +
+        `\n` +
+        `Return preflight_pass + any failing items as review_findings (severity: 'block' if it violates the matrix OR drift-blocks).\n` +
         `Write to ${PATHS.memoryDir}/audit-preflight.json.`,
         { schema: AUDIT_SCHEMA, label: 'audit-preflight', phase: 'Audit' }
       ),
